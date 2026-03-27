@@ -1,0 +1,69 @@
+import express from "express";
+import Client from "../models/client.js";
+import { register, login, updateProfile } from "../controllers/authController.js";
+import jwt from "jsonwebtoken";
+import multer from "multer";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "uploads"),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+});
+const upload = multer({ storage });
+
+import authenticateClient from "../middlewares/authMiddleware.js";
+const router = express.Router();
+
+router.post("/register", register);
+router.post("/login", login);
+router.get("/profile", authenticateClient, async (req, res) => {
+  try {
+    if (!req.user || req.user.firebaseOnly) {
+      return res.status(404).json({ message: "User not registered in local database" });
+    }
+
+    const client = await Client.findByPk(req.user.client_id, {
+      attributes: [
+        "client_id",
+        "name",
+        "phone",
+        "email",
+        "unique_code",
+        "userType",
+        "profile_image",
+        "created_at",
+        "updated_at",
+      ],
+    });
+
+    if (!client) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate local JWT to keep everything consistent
+    const localToken = jwt.sign(
+      {
+        client_id: client.client_id,
+        phone: client.phone,
+        email: client.email,
+        userType: client.userType,
+        unique_code: client.unique_code,
+      },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({
+      message: "Welcome to profile",
+      user: client,
+      token: localToken
+    });
+  } catch (error) {
+    console.error("Profile Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.put("/profile", authenticateClient, upload.single("profile_image"), updateProfile);
+
+export default router;

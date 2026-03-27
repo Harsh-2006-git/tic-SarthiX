@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import Client from "../models/client.js";
-import { v4 as uuidv4 } from "uuid";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const authenticateClient = async (req, res, next) => {
   const authHeader = req.header("Authorization");
@@ -8,37 +10,42 @@ const authenticateClient = async (req, res, next) => {
     return res.status(401).json({ message: "Authorization header missing" });
   }
 
-  const token = authHeader.replace("Bearer ", "");
+  const token = authHeader.includes("Bearer ") 
+    ? authHeader.replace("Bearer ", "") 
+    : authHeader;
+
   if (!token) {
     return res.status(401).json({ message: "Token missing" });
   }
 
   try {
-    // 1. Try local JWT verification
+    // 1. Try local JWT verification first
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = decoded;
       return next();
     } catch (localErr) {
-      // If local verification fails, try decoding as Firebase token
-      const decoded = jwt.decode(token);
+      // 2. If local verification fails, check if it's a Google ID Token
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: token,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
 
-      // Check if it looks like a Firebase token
-      if (decoded && (decoded.iss?.includes("securetoken.google.com") || decoded.aud === "divya-yatra-devsprint")) {
-        // Find or create user in our database based on email or phone from Firebase
-        const email = decoded.email;
-        const phone = decoded.phone_number || "";
+        const payload = ticket.getPayload();
+        const { email, phone_number, name } = payload;
 
+        // Find or create user in our database
         let client = await Client.findOne({
-          where: email ? { email } : { phone }
+          where: email ? { email } : { phone: phone_number || "" }
         });
 
         if (!client) {
-          // Instead of creating, we just set the info we have from Firebase
+          // If the user doesn't exist, we provide the payload enough to register him.
           req.user = {
-            firebaseOnly: true,
+            firebaseOnly: true, // Legacy flag, but still useful to denote incomplete registration
             email: email,
-            name: decoded.name,
+            name: name,
           };
           return next();
         }
@@ -51,8 +58,10 @@ const authenticateClient = async (req, res, next) => {
           unique_code: client.unique_code,
         };
         return next();
+      } catch (googleErr) {
+        console.error("Google verify error:", googleErr.message);
+        throw localErr; // Re-throw localErr which usually refers to an invalid token or expired
       }
-      throw localErr;
     }
   } catch (error) {
     if (error.name === "TokenExpiredError") {

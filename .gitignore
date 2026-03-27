@@ -36,11 +36,12 @@ yarn-error.log*
 
 # Python
 __pycache__/
-# venv/
-# .venv/
+venv/
+.venv/
 *.py[cod]
 *$py.class
-# **/venv/
+**/venv/
+**/.venv/
 **/__pycache__/
 
 # Project Specific

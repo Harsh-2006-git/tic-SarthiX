@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Compass, User, LogOut, MapPin, ChevronDown, CreditCard } from "lucide-react";
 import GuidePage from "../pages/guide";
-import { auth } from "../config/firebase";
-import { signOut } from "firebase/auth";
 
 import logo from "../assets/logo.png";
 
@@ -25,15 +23,10 @@ const Header = () => {
         }
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            window.location.href = "/auth";
-        } catch (error) {
-            console.error("Logout error", error);
-        }
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/auth";
     };
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);

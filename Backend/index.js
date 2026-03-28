@@ -24,7 +24,6 @@ dotenv.config();
 const PORT = process.env.PORT || 3001;
 const app = express();
 
-
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,7 +46,7 @@ app.use(
       "Origin",
       "X-Requested-With",
     ],
-  })
+  }),
 );
 
 // Middleware - FIX 2: Correct order
@@ -56,7 +55,7 @@ app.use(express.urlencoded({ extended: true })); // Move this up before routes
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }, // FIX 3: Allow cross-origin resources
-  })
+  }),
 );
 
 // Static file serving - FIX 4: Better path resolution

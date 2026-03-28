@@ -21,17 +21,67 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import logo from "../assets/logo.png";
 
+const imageModules = import.meta.glob('../temple1/*.jpg', { eager: true });
+const imageUrls = Object.keys(imageModules)
+  .sort()
+  .map((path) => imageModules[path].default || imageModules[path]);
+
 const HomePage2 = () => {
   const navigate = useNavigate();
-  const heroRef = useRef(null);
+  const heroContainerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const imagesRef = useRef([]);
+  const [imagesPreloaded, setImagesPreloaded] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
+    let loadedCount = 0;
+    const imgs = [];
+    imageUrls.forEach((url, i) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        loadedCount++;
+        setLoadingProgress(Math.floor((loadedCount / imageUrls.length) * 100));
+        if (loadedCount === imageUrls.length) {
+          setImagesPreloaded(true);
+        }
+      };
+      imgs[i] = img;
+    });
+    imagesRef.current = imgs;
+  }, []);
+
+  useEffect(() => {
+    if (!imagesPreloaded) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const renderFrame = (index) => {
+      if (!imagesRef.current[index]) return;
+      const img = imagesRef.current[index];
+      if (canvas.width !== img.width) canvas.width = img.width;
+      if (canvas.height !== img.height) canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+    };
+
+    renderFrame(0);
+
     let ticking = false;
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          if (heroRef.current) {
-            heroRef.current.style.transform = `translate3d(0, ${window.scrollY * 0.4}px, 0) scale(1.1)`;
+          if (heroContainerRef.current) {
+            const rect = heroContainerRef.current.getBoundingClientRect();
+            const maxScroll = rect.height - window.innerHeight;
+            let progress = 0;
+            if (rect.top < 0) {
+              progress = Math.min(1, Math.abs(rect.top) / maxScroll);
+            }
+            const maxIndex = imageUrls.length - 1;
+            const index = Math.min(maxIndex, Math.max(0, Math.floor(progress * maxIndex)));
+            renderFrame(index);
           }
           ticking = false;
         });
@@ -40,7 +90,7 @@ const HomePage2 = () => {
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [imagesPreloaded]);
 
   const handleNavigation = (target) => {
     if (target.startsWith("http")) {
@@ -128,115 +178,107 @@ const HomePage2 = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 text-gray-800 leading-relaxed font-sans">
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative h-screen min-h-[700px] flex items-center justify-center lg:justify-start text-white overflow-hidden">
-        <div
-          ref={heroRef}
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform"
-          style={{
-            backgroundImage:
-              'url("https://img.freepik.com/premium-photo/indian-historical-temple-painting-watercolor-effect_181203-26134.jpg")',
-            transform: "translate3d(0, 0, 0) scale(1.1)",
-          }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-orange-900/30 to-black/70 lg:bg-gradient-to-r lg:from-black/60 lg:to-transparent"></div>
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-orange-300/30 rounded-full animate-bounce"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 2}s`,
-              }}
-            ></div>
-          ))}
-        </div>
+      {/* Hero Section with Scroll Animation */}
+      {/* Reduced height from 400vh to 250vh to make animation faster */}
+      <section ref={heroContainerRef} className="relative w-full h-[250vh] mt-[80px] bg-transparent">
+        {/* Sticks dynamically right below the shrunken header height (72px) so no gap is left */}
+        <div className="sticky top-[72px] h-[calc(100vh-72px)] w-full flex items-center justify-center lg:justify-start text-white overflow-hidden bg-[#fafafa]">
+          {/* Scroll Canvas Background */}
+          {!imagesPreloaded && (
+             <div className="absolute inset-0 flex items-center justify-center z-0">
+                <div className="text-orange-500 font-bold text-xl drop-shadow-lg">Loading Experience... {loadingProgress}%</div>
+             </div>
+          )}
+          <canvas
+            ref={canvasRef}
+            /* Object-top ensures we see the very top frame without crop */
+            className="absolute inset-0 w-full h-full object-cover object-top z-0 transition-opacity duration-1000"
+            style={{ opacity: imagesPreloaded ? 1 : 0 }}
+          ></canvas>
+          
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70 lg:bg-gradient-to-r lg:from-black/80 lg:to-transparent z-[1] pointer-events-none"></div>
+          
+          <div className="absolute inset-0 overflow-hidden z-[1] pointer-events-none">
+            {[...Array(15)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1.5 h-1.5 bg-orange-300/30 rounded-full animate-bounce"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`,
+                }}
+              ></div>
+            ))}
+          </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-8 items-center">
-            <div className="lg:col-span-3 text-center lg:text-left animate-fadeInUp">
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-2xl bg-gradient-to-r from-orange-200 to-yellow-200 bg-clip-text text-transparent leading-tight">
-                Welcome to Divya Yatra
-              </h1>
-              <p className="text-lg md:text-xl lg:text-2xl mb-6 drop-shadow-lg font-light">
-                Begin Your Sacred Journey to the Holy City
-              </p>
-              <p className="text-base md:text-lg mb-8 max-w-2xl mx-auto lg:mx-0 opacity-90 leading-relaxed">
-                Experience divine blessings at Mahakaleshwar Jyotirlinga and immerse
-                yourself in centuries of spiritual heritage
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <button
-                  onClick={() => handleNavigation("/ticket")}
-                  className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full font-bold text-base transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 transform"
-                >
-                  Start Your Journey
-                </button>
-                <button
-                  onClick={() => handleNavigation("darshan")}
-                  className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-full font-bold text-base transition-all duration-300 hover:-translate-y-1 transform backdrop-blur-md"
-                >
-                  Watch Live Darshan
-                </button>
-
+          <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 mt-8 lg:mt-16">
+            {/* Flex layout to push text to far left and logo to far right */}
+            <div className="flex flex-col lg:flex-row justify-between items-center w-full">
+              <div className="text-left animate-fadeInUp max-w-xl">
+                {/* Decreased text size further */}
+                <h1 className="text-lg md:text-2xl lg:text-4xl font-bold mb-3 drop-shadow-2xl bg-gradient-to-r from-orange-200 to-yellow-200 bg-clip-text text-transparent leading-tight tracking-wide">
+                  Welcome to Divya Yatra
+                </h1>
+                <p className="text-sm md:text-base lg:text-lg mb-4 drop-shadow-lg font-light text-orange-50">
+                  Begin Your Sacred Journey
+                </p>
+                <p className="text-xs md:text-sm mb-6 max-w-xl opacity-80 leading-relaxed">
+                  Experience divine blessings at Mahakaleshwar Jyotirlinga and immerse yourself in centuries of spiritual heritage.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-start">
+                  <button
+                    onClick={() => handleNavigation("/ticket")}
+                    className="px-5 py-2.5 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-full font-bold text-xs transition-all duration-300 hover:shadow-[0_0_20px_rgba(234,88,12,0.4)] hover:-translate-y-1 transform border border-orange-500/50"
+                  >
+                    Start Your Journey
+                  </button>
+                  <button
+                    onClick={() => handleNavigation("darshan")}
+                    className="px-5 py-2.5 bg-black/30 hover:bg-white/10 text-white border border-white/20 rounded-full font-bold text-xs transition-all duration-300 hover:-translate-y-1 transform backdrop-blur-md"
+                  >
+                    Watch Live Darshan
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Right Side Decorative Content (Desktop Only) */}
-            <div className="lg:col-span-2 hidden lg:flex justify-end relative items-center">
-              <div className="relative w-96 h-96 flex items-center justify-center">
-                {/* Decorative Glowing Rings */}
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-600/20 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute w-full h-full border-2 border-orange-500/10 rounded-full animate-[spin_20s_linear_infinite]"></div>
-                <div className="absolute w-[80%] h-[80%] border border-white/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+              {/* Smaller Logo section pushed right */}
+              <div className="hidden lg:flex relative items-center pointer-events-none mt-10 lg:mt-0">
+                <div className="relative w-52 h-52 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-600/10 rounded-full blur-2xl animate-pulse"></div>
+                  <div className="absolute w-full h-full border border-orange-500/10 rounded-full animate-[spin_20s_linear_infinite]"></div>
+                  <div className="absolute w-[80%] h-[80%] border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
 
-                {/* Floating Round Logo Centerpiece */}
-                <div className="relative z-20 flex flex-col items-center">
-                  <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-orange-500/30 shadow-[0_0_50px_rgba(234,88,12,0.3)] bg-transparent">
-                    <img src={logo} alt="Divya Yatra Logo" className="w-full h-full object-cover filter brightness-110" />
+                  {/* Circular Logo Container */}
+                  <div className="relative z-20 flex flex-col items-center">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-orange-500/30 shadow-[0_0_30px_rgba(234,88,12,0.2)] bg-transparent">
+                      <img src={logo} alt="Divya Yatra Logo" className="w-full h-full object-cover filter brightness-110" />
+                    </div>
+                    {/* Tiny quote element */}
+                    <div className="flex flex-col items-center mt-3 z-30">
+                      <div className="w-6 h-0.5 bg-gradient-to-r from-orange-500 to-red-600 rounded-full mb-1 shadow-[0_0_10px_rgba(234,88,12,0.5)]"></div>
+                      <p className="text-[9px] text-orange-200/80 font-bold tracking-[0.2em] uppercase whitespace-nowrap drop-shadow-md">
+                        Faith • Peace • Devotion
+                      </p>
+                    </div>
                   </div>
-                  {/* Small line and quote below the logo */}
-                  <div className="flex flex-col items-center mt-6 z-30">
-                    <div className="w-12 h-1 bg-gradient-to-r from-orange-500 to-red-600 rounded-full mb-3 shadow-[0_0_10px_rgba(234,88,12,0.5)]"></div>
-                    <p className="text-xs text-orange-100 font-extrabold tracking-[0.25em] uppercase whitespace-nowrap drop-shadow-md">
-                      Faith • Peace • Devotion
-                    </p>
+                  <div className="absolute inset-0 rounded-full border border-orange-500/10 scale-110 animate-pulse"></div>
+                </div>
+
+                {/* Minimal orbital rings mapped to new scale */}
+                <div className="absolute inset-0 animate-[orbit_15s_linear_infinite] flex items-center justify-center pointer-events-none">
+                  <div className="relative w-52 h-52 border border-white/5 rounded-full flex items-center justify-center">
+                    <div className="absolute top-0 w-2.5 h-2.5 bg-gradient-to-br from-orange-400 to-red-500 rounded-full shadow-[0_0_10px_rgba(234,88,12,0.5)]"></div>
                   </div>
                 </div>
-                {/* Subtle outer glow ring */}
-                <div className="absolute inset-0 rounded-full border border-orange-500/20 scale-125 animate-pulse"></div>
-              </div>
 
-              {/* Multiple Slowed Orbital Rings */}
-              {/* Ring 1 - Outer */}
-              <div className="absolute inset-0 animate-[orbit_15s_linear_infinite] flex items-center justify-center pointer-events-none">
-                <div className="relative w-96 h-96 border border-white/5 rounded-full flex items-center justify-center">
-                  <div className="absolute top-0 w-6 h-6 bg-gradient-to-br from-orange-400 to-red-500 rounded-full shadow-[0_0_15px_rgba(234,88,12,0.6)]">
-                    <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></div>
+                <div className="absolute inset-0 animate-[orbit_25s_linear_infinite_reverse] flex items-center justify-center pointer-events-none">
+                  <div className="relative w-[180px] h-[180px] border border-white/5 rounded-full">
+                    <div className="absolute bottom-5 left-5 w-1.5 h-1.5 bg-yellow-400 rounded-full shadow-sm"></div>
                   </div>
                 </div>
               </div>
-
-              {/* Ring 2 - Middle */}
-              <div className="absolute inset-0 animate-[orbit_25s_linear_infinite_reverse] flex items-center justify-center pointer-events-none">
-                <div className="relative w-[320px] h-[320px] border border-white/10 rounded-full">
-                  <div className="absolute bottom-10 left-10 w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.5)]"></div>
-                </div>
-              </div>
-
-              {/* Ring 3 - Inner */}
-              <div className="absolute inset-0 animate-[orbit_20s_linear_infinite] flex items-center justify-center pointer-events-none">
-                <div className="relative w-[240px] h-[240px] border border-white/5 rounded-full">
-                  <div className="absolute top-1/2 -right-2 w-2 h-2 bg-orange-300 rounded-full"></div>
-                </div>
-              </div>
-
-              {/* Floating Orbs */}
-              <div className="absolute top-0 right-10 w-4 h-4 bg-orange-400 rounded-full blur-sm animate-ping"></div>
-              <div className="absolute bottom-10 left-0 w-3 h-3 bg-red-400 rounded-full blur-sm animate-pulse"></div>
             </div>
           </div>
         </div>

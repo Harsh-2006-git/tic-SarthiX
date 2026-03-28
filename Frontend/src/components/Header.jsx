@@ -83,7 +83,7 @@ const Header = () => {
         { name: "Services", target: "services" },
 
         { name: "Parking", target: "/parking" },
-        { name: "AI Planner", target: "http://localhost:9002" },
+        { name: "AI Planner", target: `http://localhost:9002?token=${localStorage.getItem('token')}` },
         // { name: "Simulation", target: "/crowd-simulation" },
         { name: "Map", target: "/map" },
         { name: "Contact", target: "contact" },

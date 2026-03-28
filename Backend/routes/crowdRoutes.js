@@ -15,9 +15,14 @@ let aiProcess = null;
 
 
 export const initCrowdAI = (backendPath) => {
+    if (process.env.VERCEL) {
+        console.warn("⚠️ AI Core disabled in Vercel Serverless Mode. Please deploy the Python AI service separately and update CROWD_BACKEND_URL.");
+        return;
+    }
+
     if (aiProcess) return;
 
-    const pythonPath = "py";
+    const pythonPath = process.platform === "win32" ? "py" : "python3";
     const scriptPath = path.join(backendPath, "AI_Core", "crowd_engine.py");
 
     // Fix for DeprecationWarning and Security: verify python exists or use shell: false

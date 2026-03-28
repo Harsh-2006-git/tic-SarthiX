@@ -9,25 +9,42 @@ dotenv.config();
  */
 
 // Helper to choose variables based on mode
-const isCloud = process.env.DB_MODE === "cloud";
+// If Vercel is used, we usually have VERCEL environment variable, but let's just check DATABASE_URL
+const isCloud = process.env.DB_MODE === "cloud" || !!process.env.DATABASE_URL;
 
 let sequelize;
+
+let sslOptions = {};
+if (process.env.DB_SSL === "true") {
+  sslOptions = {
+    require: true,
+    rejectUnauthorized: false
+  };
+  
+  if (process.env.DB_CA_CERT_PATH) {
+    try {
+      // Use process.cwd() or fallback to basic requires
+      const certPath = process.env.DB_CA_CERT_PATH.startsWith("/") 
+        ? process.env.DB_CA_CERT_PATH 
+        : new URL(`../${process.env.DB_CA_CERT_PATH}`, import.meta.url).pathname;
+        
+      if (fs.existsSync(certPath)) {
+        sslOptions.ca = fs.readFileSync(certPath);
+      } else if (fs.existsSync(process.env.DB_CA_CERT_PATH)) {
+        sslOptions.ca = fs.readFileSync(process.env.DB_CA_CERT_PATH);
+      }
+    } catch (err) {
+      console.warn("⚠️ Could not read DB CA certificate:", err.message);
+    }
+  }
+}
 
 if (isCloud && process.env.DATABASE_URL) {
   // Use connection string if provided for cloud
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: "mysql",
     logging: false,
-    dialectOptions:
-      process.env.DB_SSL === "true"
-        ? {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false,
-            ca: fs.readFileSync(process.env.DB_CA_CERT_PATH),
-          },
-        }
-        : {},
+    dialectOptions: process.env.DB_SSL === "true" ? { ssl: sslOptions } : {},
   });
 } else {
   // Otherwise use individual variables
@@ -46,16 +63,7 @@ if (isCloud && process.env.DATABASE_URL) {
       port: Number(DB_PORT),
       dialect: "mysql",
       logging: false,
-      dialectOptions:
-        process.env.DB_SSL === "true"
-          ? {
-            ssl: {
-              require: true,
-              rejectUnauthorized: false,
-              ca: fs.readFileSync(process.env.DB_CA_CERT_PATH),
-            },
-          }
-          : {},
+      dialectOptions: process.env.DB_SSL === "true" ? { ssl: sslOptions } : {},
     }
   );
 }

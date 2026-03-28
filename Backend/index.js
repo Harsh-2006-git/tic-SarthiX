@@ -90,37 +90,55 @@ app.use("/api/v1/family", familyMemberRoutes);
 app.use(errorHandler);
 
 
-// Clean server startup
-const startServer = async () => {
+// Serverless Compatibility and Server Initialization
+let isInitialized = false;
+
+const initializeApp = async () => {
+  if (isInitialized) return;
   try {
-    // Force a deep terminal clear
-    process.stdout.write("\u001b[2J\u001b[0;0H");
-
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("🔄 Divya Yatra Server Initializing...");
-
-    // 1. Core Systems
     await connectDB();
     await sequelize.sync();
     console.log("✅ Database Successfully Connected");
 
-    // 2. AI Neural Core Launch
     const backendRoot = path.dirname(fileURLToPath(import.meta.url));
     initCrowdAI(backendRoot);
     console.log("🧠 AI Neural Core active");
+    
+    isInitialized = true;
+  } catch (error) {
+    console.error("❌ Failed to ignite server:", error.message);
+  }
+};
 
-    // 3. Finalize
+// If we are running in Vercel, we can export the app and initialize DB
+// We attach a middleware that ensures the DB is connected before handling requests
+app.use(async (req, res, next) => {
+  if (!isInitialized) {
+    await initializeApp();
+  }
+  next();
+});
+
+if (process.env.VERCEL) {
+  // Vercel Serverless Function entry point
+  console.log("📱 Running in Serverless Mode");
+} else {
+  // Local development entry point
+  const startServer = async () => {
+    process.stdout.write("\u001b[2J\u001b[0;0H");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    
+    await initializeApp();
+    
     app.listen(PORT, "0.0.0.0", () => {
       console.log("📧 Email system ready");
       console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     });
-  } catch (error) {
-    console.error("❌ Failed to ignite server:", error.message);
-    process.exit(1);
-  }
-};
+  };
 
-startServer();
+  startServer();
+}
 
-// Trigger AI Core Restart (Logs Silenced)
+export default app;

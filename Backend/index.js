@@ -24,8 +24,6 @@ dotenv.config();
 const PORT = process.env.PORT || 3001;
 const app = express();
 
-// Initialize the AI Core at startup
-initCrowdAI(path.dirname(fileURLToPath(import.meta.url)));
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -91,29 +89,34 @@ app.use("/api/v1/family", familyMemberRoutes);
 
 app.use(errorHandler);
 
+
 // Clean server startup
 const startServer = async () => {
   try {
-    console.log("🔄 Starting server...");
+    // Force a deep terminal clear
+    process.stdout.write("\u001b[2J\u001b[0;0H");
 
-    // Connect to database
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔄 Divya Yatra Server Initializing...");
+
+    // 1. Core Systems
     await connectDB();
-    //await seed();
-
-    // Sync database - Disabled alter:true to prevent "Too many keys" error (duplicate indexes)
-    // If schema updates are needed, we should run a proper migration or use force:true once (warning: deletes data).
     await sequelize.sync();
-    //await sequelize.sync({ force: true });
+    console.log("✅ Database Successfully Connected");
 
-    // Start server
+    // 2. AI Neural Core Launch
+    const backendRoot = path.dirname(fileURLToPath(import.meta.url));
+    initCrowdAI(backendRoot);
+    console.log("🧠 AI Neural Core active");
+
+    // 3. Finalize
     app.listen(PORT, "0.0.0.0", () => {
-      console.log("✅ Database connected");
-      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`)
-      console.log("📧 Email verification system ready");
+      console.log("📧 Email system ready");
+      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error.message);
+    console.error("❌ Failed to ignite server:", error.message);
     process.exit(1);
   }
 };

@@ -13,13 +13,12 @@ const CROWD_BACKEND_URL = "http://127.0.0.1:5773";
 // AI Process Management
 let aiProcess = null;
 
+
 export const initCrowdAI = (backendPath) => {
     if (aiProcess) return;
 
     const pythonPath = "py";
     const scriptPath = path.join(backendPath, "AI_Core", "crowd_engine.py");
-
-    console.log(`🧠 AI Core: Activating neural pathways at ${scriptPath}`);
 
     // Fix for DeprecationWarning and Security: verify python exists or use shell: false
     // Using shell: false is safer and removes the warning

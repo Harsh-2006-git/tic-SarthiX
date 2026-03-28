@@ -12,13 +12,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "..", "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
+
 import logging
 
-app = Flask(__name__)
+# Silence Flask/Werkzeug logs
+from flask import cli
+cli.show_server_banner = lambda *args: None
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-# Disable Flask request logging
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+app = Flask(__name__)
 
 # Config
 def load_config():

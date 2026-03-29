@@ -213,52 +213,52 @@ const HomePage2 = () => {
             ))}
           </div>
 
-          <div className="relative z-10 w-full px-6 md:px-12 lg:px-20 mt-8 lg:mt-16">
+          <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 xl:px-16 mt-8 lg:mt-16">
             {/* Flex layout to push text to far left and logo to far right */}
             <div className="flex flex-col lg:flex-row justify-between items-center w-full">
-              <div className="text-left animate-fadeInUp max-w-xl">
-                {/* Hero typography scaled up */}
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black mb-4 drop-shadow-2xl bg-gradient-to-r from-white via-orange-100 to-orange-200 bg-clip-text text-transparent leading-[1.1] tracking-tight">
-                  Welcome to <br /> Divya Yatra
+              <div className="text-center lg:text-left animate-fadeInUp max-w-xl">
+                {/* Hero typography scaled down further and on a single line */}
+                <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black mb-3 drop-shadow-2xl bg-gradient-to-r from-white via-orange-100 to-orange-200 bg-clip-text text-transparent leading-[1.15] tracking-tight whitespace-nowrap">
+                  Welcome to Divya Yatra
                 </h1>
-                <p className="text-xl md:text-2xl lg:text-3xl mb-6 drop-shadow-lg font-semibold text-orange-100">
+                <p className="text-base md:text-lg lg:text-xl mb-4 drop-shadow-lg font-semibold text-orange-100">
                   Begin Your Sacred Journey
                 </p>
-                <p className="text-base md:text-lg mb-8 max-w-xl text-white/90 leading-relaxed font-medium drop-shadow whitespace-pre-line">
+                <p className="hidden md:block text-sm lg:text-base mb-6 max-w-lg text-white/90 leading-relaxed font-medium drop-shadow whitespace-pre-line mx-auto lg:mx-0">
                   Experience divine blessings at Mahakaleshwar Jyotirlinga and immerse yourself in centuries of spiritual heritage.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-start">
+                <div className="flex flex-row gap-2 sm:gap-3 justify-center lg:justify-start">
                   <button
                     onClick={() => handleNavigation("/ticket")}
-                    className="px-8 py-4 md:px-10 md:py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-full font-bold text-sm md:text-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,88,12,0.6)] hover:-translate-y-1 transform border border-orange-500/50"
+                    className="px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-full font-bold text-[10px] sm:text-xs md:text-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(234,88,12,0.6)] hover:-translate-y-1 transform border border-orange-500/50"
                   >
                     Start Your Journey
                   </button>
                   <button
                     onClick={() => handleNavigation("darshan")}
-                    className="px-8 py-4 md:px-10 md:py-4 bg-black/40 hover:bg-white/20 text-white border border-white/30 rounded-full font-bold text-sm md:text-lg transition-all duration-300 hover:-translate-y-1 transform backdrop-blur-md shadow-lg"
+                    className="px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 bg-black/40 hover:bg-white/20 text-white border border-white/30 rounded-full font-bold text-[10px] sm:text-xs md:text-sm transition-all duration-300 hover:-translate-y-1 transform backdrop-blur-md shadow-md"
                   >
                     Watch Live Darshan
                   </button>
                 </div>
               </div>
 
-              {/* Grand Logo section pushed right */}
-              <div className="hidden lg:flex relative items-center pointer-events-none mt-10 lg:mt-0 mr-10 xl:mr-20">
-                <div className="relative w-96 h-96 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-600/20 rounded-full blur-3xl animate-pulse"></div>
+              {/* Downscaled Logo section pushed right - visible on mobile too */}
+              <div className="flex relative items-center pointer-events-none mt-8 lg:mt-0">
+                <div className="relative w-48 h-48 md:w-56 md:h-56 lg:w-[260px] lg:h-[260px] flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-600/20 rounded-full blur-2xl animate-pulse"></div>
                   <div className="absolute w-full h-full border border-orange-400/20 rounded-full animate-[spin_20s_linear_infinite]"></div>
                   <div className="absolute w-[85%] h-[85%] border border-white/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
 
                   {/* Circular Logo Container */}
                   <div className="relative z-20 flex flex-col items-center">
-                    <div className="w-56 h-56 rounded-full overflow-hidden border-4 border-orange-400/40 shadow-[0_0_60px_rgba(234,88,12,0.4)] bg-transparent">
+                    <div className="w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 rounded-full overflow-hidden border-2 md:border-4 border-orange-400/40 shadow-[0_0_30px_rgba(234,88,12,0.4)] bg-transparent">
                       <img src={logo} alt="Divya Yatra Logo" className="w-full h-full object-cover filter brightness-110" />
                     </div>
-                    {/* Enlarged quote element */}
-                    <div className="flex flex-col items-center mt-6 z-30">
-                      <div className="w-12 h-1 bg-gradient-to-r from-orange-400 to-red-500 rounded-full mb-2 shadow-[0_0_15px_rgba(234,88,12,0.6)]"></div>
-                      <p className="text-sm text-orange-100 font-bold tracking-[0.25em] uppercase whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    {/* Tiny quote element */}
+                    <div className="flex flex-col items-center mt-3 md:mt-4 z-30">
+                      <div className="w-6 md:w-8 h-1 bg-gradient-to-r from-orange-400 to-red-500 rounded-full mb-1 shadow-[0_0_10px_rgba(234,88,12,0.6)]"></div>
+                      <p className="text-[8px] md:text-[10px] lg:text-xs text-orange-100 font-bold tracking-[0.2em] uppercase whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                         Faith • Peace • Devotion
                       </p>
                     </div>
@@ -266,16 +266,16 @@ const HomePage2 = () => {
                   <div className="absolute inset-0 rounded-full border border-orange-400/20 scale-110 animate-pulse"></div>
                 </div>
 
-                {/* Grand orbital rings mapped to new scale */}
+                {/* Scaled orbital rings */}
                 <div className="absolute inset-0 animate-[orbit_15s_linear_infinite] flex items-center justify-center pointer-events-none">
-                  <div className="relative w-96 h-96 border border-white/10 rounded-full flex items-center justify-center">
-                    <div className="absolute top-0 w-4 h-4 bg-gradient-to-br from-orange-300 to-red-500 rounded-full shadow-[0_0_15px_rgba(234,88,12,0.8)]"></div>
+                  <div className="relative w-48 h-48 md:w-56 md:h-56 lg:w-[260px] lg:h-[260px] border border-white/10 rounded-full flex items-center justify-center">
+                    <div className="absolute top-0 w-2 h-2 md:w-3 md:h-3 bg-gradient-to-br from-orange-300 to-red-500 rounded-full shadow-[0_0_10px_rgba(234,88,12,0.8)]"></div>
                   </div>
                 </div>
 
                 <div className="absolute inset-0 animate-[orbit_25s_linear_infinite_reverse] flex items-center justify-center pointer-events-none">
-                  <div className="relative w-[340px] h-[340px] border border-white/10 rounded-full">
-                    <div className="absolute bottom-10 left-10 w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.8)]"></div>
+                  <div className="relative w-[200px] h-[200px] md:w-[220px] md:h-[220px] lg:w-[300px] lg:h-[300px] border border-white/10 rounded-full">
+                    <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 lg:bottom-8 lg:left-8 w-1.5 h-1.5 md:w-2 md:h-2 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)]"></div>
                   </div>
                 </div>
               </div>

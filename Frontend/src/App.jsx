@@ -19,6 +19,8 @@ import ParkingHost from "./pages/Parking/ParkingHost";
 import MyBookings from "./pages/Parking/MyBookings";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import AIAssistant from "./components/AIAssistant";
+import NearbyServices from "./pages/NearbyServices";
+
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -83,6 +85,8 @@ function App() {
         <Route path="/parking/host" element={<ParkingHost />} />
         <Route path="/parking/my-bookings" element={<MyBookings />} />
         <Route path="/ai-assistant" element={<AIAssistantPage />} />
+        <Route path="/nearby" element={<NearbyServices />} />
+
       </Routes>
     </div>
   );

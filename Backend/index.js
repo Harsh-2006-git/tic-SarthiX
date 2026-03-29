@@ -12,6 +12,8 @@ import adminRoutes from "./routes/adminRoutes.js";
 import parkingRoutes from "./routes/parkingRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import familyMemberRoutes from "./routes/familyMemberRoutes.js";
+import nearbyRoutes from "./routes/nearbyRoutes.js";
+
 
 import cors from "cors";
 import path from "path";
@@ -85,6 +87,8 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/parking", parkingRoutes);
 app.use("/api/v1/booking", bookingRoutes);
 app.use("/api/v1/family", familyMemberRoutes);
+app.use("/api/v1/nearby", nearbyRoutes);
+
 
 app.use(errorHandler);
 
@@ -103,7 +107,7 @@ const initializeApp = async () => {
     const backendRoot = path.dirname(fileURLToPath(import.meta.url));
     initCrowdAI(backendRoot);
     console.log("🧠 AI Neural Core active");
-    
+
     isInitialized = true;
   } catch (error) {
     console.error("❌ Failed to ignite server:", error.message);
@@ -127,9 +131,9 @@ if (process.env.VERCEL) {
   const startServer = async () => {
     process.stdout.write("\u001b[2J\u001b[0;0H");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    
+
     await initializeApp();
-    
+
     app.listen(PORT, "0.0.0.0", () => {
       console.log("📧 Email system ready");
       console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);

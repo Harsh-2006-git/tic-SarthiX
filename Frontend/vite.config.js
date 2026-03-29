@@ -7,6 +7,6 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   envDir: "../", // Load .env from the root directory
   server: {
-    port: 3000,
+    port: 5173,
   },
 });

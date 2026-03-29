@@ -12,7 +12,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import parkingRoutes from "./routes/parkingRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import familyMemberRoutes from "./routes/familyMemberRoutes.js";
-import familyMemberRoutes from "./routes/familyMemberRoutes.js";
+
 import nearbyRoutes from "./routes/nearbyRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 
@@ -91,7 +91,7 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/parking", parkingRoutes);
 app.use("/api/v1/booking", bookingRoutes);
 app.use("/api/v1/family", familyMemberRoutes);
-app.use("/api/v1/family", familyMemberRoutes);
+
 app.use("/api/v1/nearby", nearbyRoutes);
 app.use("/api/v1/chatbot", chatbotRoutes);
 

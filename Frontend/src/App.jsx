@@ -22,7 +22,6 @@ import AIAssistant from "./components/AIAssistant";
 import NearbyServices from "./pages/NearbyServices";
 import ChatbotPage from "./pages/ChatbotPage";
 
-
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 

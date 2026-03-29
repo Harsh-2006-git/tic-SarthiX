@@ -6,6 +6,9 @@ import App from "./App";
 import "./index.css";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID";
+console.log("VITE_GOOGLE_CLIENT_ID from env:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+console.log("Using GOOGLE_CLIENT_ID:", GOOGLE_CLIENT_ID);
+
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

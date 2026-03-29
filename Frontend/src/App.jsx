@@ -19,6 +19,7 @@ import ParkingHost from "./pages/Parking/ParkingHost";
 import MyBookings from "./pages/Parking/MyBookings";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import AIAssistant from "./components/AIAssistant";
+import ChatbotPage from "./pages/ChatbotPage";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -67,7 +68,6 @@ function App() {
             )
           }
         />
-        <Route path="*" element={<Navigate to="/auth" />} />
         <Route path="/live-darshan" element={<LiveDarshan />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/lostFound" element={<LostAndFound />} />
@@ -83,6 +83,10 @@ function App() {
         <Route path="/parking/host" element={<ParkingHost />} />
         <Route path="/parking/my-bookings" element={<MyBookings />} />
         <Route path="/ai-assistant" element={<AIAssistantPage />} />
+        <Route path="/chatbot" element={<ChatbotPage />} />
+        
+        {/* Catch-all route at the very bottom */}
+        <Route path="*" element={<Navigate to="/auth" />} />
       </Routes>
     </div>
   );

@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Client from "../models/client.js";
 import { v4 as uuidv4 } from "uuid";
-const JWT_SECRET = process.env.JWT_SECRET; // store securely
+
 
 export const register = async (req, res) => {
   try {
@@ -45,7 +45,7 @@ export const register = async (req, res) => {
         userType: client.userType,
         unique_code: client.unique_code,
       },
-      JWT_SECRET,
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
@@ -72,7 +72,7 @@ export const register = async (req, res) => {
       });
     }
 
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message, stack: error.stack });
   }
 };
 
@@ -100,7 +100,7 @@ export const login = async (req, res) => {
         userType: client.userType,
         unique_code: client.unique_code,
       },
-      JWT_SECRET,
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 

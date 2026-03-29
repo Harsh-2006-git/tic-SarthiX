@@ -12,6 +12,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import parkingRoutes from "./routes/parkingRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import familyMemberRoutes from "./routes/familyMemberRoutes.js";
+import chatbotRoutes from "./routes/chatbotRoutes.js";
 
 import cors from "cors";
 import path from "path";
@@ -19,7 +20,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import crowdRoutes, { initCrowdAI } from "./routes/crowdRoutes.js";
 
+// Try loading local .env first, then fallback to parent directory .env
 dotenv.config();
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".env") });
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -85,6 +88,7 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/parking", parkingRoutes);
 app.use("/api/v1/booking", bookingRoutes);
 app.use("/api/v1/family", familyMemberRoutes);
+app.use("/api/v1/chatbot", chatbotRoutes);
 
 app.use(errorHandler);
 
@@ -119,7 +123,7 @@ app.use(async (req, res, next) => {
   next();
 });
 
-if (process.env.VERCEL) {
+if (process.env.VERCEL && process.env.NODE_ENV === "production") {
   // Vercel Serverless Function entry point
   console.log("📱 Running in Serverless Mode");
 } else {

@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import Client from "../models/client.js";
 import { OAuth2Client } from "google-auth-library";
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+let googleClient;
 
 const authenticateClient = async (req, res, next) => {
   const authHeader = req.header("Authorization");
@@ -27,6 +27,9 @@ const authenticateClient = async (req, res, next) => {
     } catch (localErr) {
       // 2. If local verification fails, check if it's a Google ID Token
       try {
+        if (!googleClient) {
+          googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        }
         const ticket = await googleClient.verifyIdToken({
           idToken: token,
           audience: process.env.GOOGLE_CLIENT_ID,

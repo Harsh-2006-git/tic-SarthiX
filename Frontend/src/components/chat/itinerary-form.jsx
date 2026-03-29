@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
 import { cn } from "../../lib/utils";
 import { Bot, Calendar as CalendarIcon, Loader2, MapPin, Users, Wallet, Sparkles, Languages } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 const formSchema = z.object({
   origin: z.string().min(2, "Please enter a valid starting location"),

@@ -93,6 +93,7 @@ const HomePage2 = () => {
   }, [imagesPreloaded]);
 
   const handleNavigation = (target) => {
+    console.log("Home: Navigating to", target);
     if (target.startsWith("http")) {
       window.location.href = target;
       return;
@@ -504,13 +505,17 @@ const HomePage2 = () => {
 
       {/* AI Chatbot Floating Action Button */}
       <button
-        onClick={() => handleNavigation("http://localhost:9002")}
+        onClick={() => handleNavigation("/chatbot")}
         className="fixed bottom-8 left-8 z-50 group flex items-center justify-center"
-        aria-label="AI Travel Planner"
+        aria-label="AI Travel Planner ✨"
       >
         <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
         <div className="relative h-14 w-14 bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-110 group-active:scale-95">
           <Bot size={28} className="text-indigo-300" />
+          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-violet-500 text-[8px] items-center justify-center font-bold">✨</span>
+          </span>
         </div>
       </button>
 

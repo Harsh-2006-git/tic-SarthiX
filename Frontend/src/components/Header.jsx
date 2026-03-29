@@ -59,6 +59,7 @@ const Header = () => {
             }
         }
 
+        console.log("Header: Navigating to", target);
         navigate("/#" + target);
     };
 
@@ -83,7 +84,7 @@ const Header = () => {
         { name: "Services", target: "services" },
 
         { name: "Parking", target: "/parking" },
-        { name: "AI Planner", target: `http://localhost:9002?token=${localStorage.getItem('token')}` },
+        { name: "AI Planner ✨", target: "/chatbot" },
         // { name: "Simulation", target: "/crowd-simulation" },
         { name: "Map", target: "/map" },
         { name: "Contact", target: "contact" },

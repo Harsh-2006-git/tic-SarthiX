@@ -2,7 +2,14 @@ import * as dotenv from "dotenv";
 import fs from "fs";
 import { Sequelize } from "sequelize";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Try loading local .env first, then fallback to parent directory .env
 dotenv.config();
+
+const resolvedEnvPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", ".env");
+dotenv.config({ path: resolvedEnvPath });
 
 /**
  * Sequelize instance

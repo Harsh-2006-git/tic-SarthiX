@@ -33,6 +33,16 @@ export default function ChatAgent({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const playAudio = (url) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.play().catch(err => console.log("Autoplay blocked or failed:", err));
+  };
   const handleSendMessage = async (e, textOverride = null) => {
     if (e) e.preventDefault();
     const userInput = textOverride ?? input;
@@ -83,9 +93,7 @@ export default function ChatAgent({
 
         // Autoplay logic
         if (audioResult.data?.media) {
-          const audio = new Audio(audioResult.data.media);
-          audioRef.current = audio;
-          audio.play().catch(err => console.log("Autoplay blocked or failed:", err));
+          playAudio(audioResult.data.media);
         }
       } catch (err) {
         console.error("TTS Error:", err);
@@ -157,6 +165,7 @@ export default function ChatAgent({
     }
   };
   useEffect(() => {
+    let isActive = true;
     const startChat = async () => {
       setIsLoading(true);
       const initialText = language === 'Hindi' ? 'नमस्ते! मैं RoamAI हूँ। आपकी दिव्य यात्रा की योजना बनाने में मैं आपकी मदद कर सकता हूँ। आप कहां जाना चाहते हैं?' : 'Hello! I am RoamAI. I can help you plan your sacred journey. Where would you like to travel?';
@@ -165,6 +174,7 @@ export default function ChatAgent({
           text: initialText,
           language
         });
+        if (!isActive) return;
         const initialMessage = {
           role: 'model',
           content: initialText,
@@ -174,18 +184,21 @@ export default function ChatAgent({
 
         // Autoplay initial greeting if audio is ready
         if (audioResult.data?.media) {
-          const audio = new Audio(audioResult.data.media);
-          audio.play().catch(err => console.log("Initial greeting autoplay blocked:", err));
+          playAudio(audioResult.data.media);
         }
       } catch (err) {
+        if (!isActive) return;
         setMessages([{
           role: 'model',
           content: initialText
         }]);
       }
-      setIsLoading(false);
+      if (isActive) setIsLoading(false);
     };
     startChat();
+    return () => {
+      isActive = false;
+    };
   }, [language]);
   return /*#__PURE__*/_jsxs("div", {
     className: "flex flex-col h-full bg-white relative overflow-hidden",
@@ -265,7 +278,7 @@ export default function ChatAgent({
               }), m.audioUrl && /*#__PURE__*/_jsxs(Button, {
                 variant: "ghost",
                 size: "sm",
-                onClick: () => new Audio(m.audioUrl).play(),
+                onClick: () => playAudio(m.audioUrl),
                 className: "h-8 pr-3 pl-2 gap-2 rounded-full border border-slate-100 bg-white hover:bg-slate-50 text-slate-500 font-bold text-[10px] uppercase tracking-widest active:scale-95",
                 children: [/*#__PURE__*/_jsx(Volume2, {
                   size: 14,

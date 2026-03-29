@@ -3,7 +3,7 @@ import Client from "../models/client.js";
 import { register, login, updateProfile } from "../controllers/authController.js";
 import jwt from "jsonwebtoken";
 import multer from "multer";
-const JWT_SECRET = process.env.JWT_SECRET;
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads"),
@@ -49,7 +49,7 @@ router.get("/profile", authenticateClient, async (req, res) => {
         userType: client.userType,
         unique_code: client.unique_code,
       },
-      JWT_SECRET,
+      process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 

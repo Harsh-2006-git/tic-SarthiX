@@ -212,7 +212,7 @@ const Header = () => {
                                             My Profile
                                         </button>
                                         <button
-                                            onClick={() => setShowGuide(!showGuide)}
+                                            onClick={() => handleNavigation("/nearby")}
                                             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-orange-50 text-slate-700 hover:text-orange-600 font-bold text-xs transition-all"
                                         >
                                             <Compass size={16} className="text-slate-400" />

@@ -15,7 +15,12 @@ import {
   BarChart3,
   Video,
   Search,
-  Bot
+  Bot,
+  Milestone,
+  Hospital,
+  Hotel,
+  Utensils,
+  Shield
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -180,25 +185,21 @@ const HomePage2 = () => {
       <Header />
 
       {/* Hero Section with Scroll Animation */}
-      {/* Reduced height from 400vh to 250vh to make animation faster */}
       <section ref={heroContainerRef} className="relative w-full h-[250vh] mt-[80px] bg-transparent">
-        {/* Sticks dynamically right below the shrunken header height (72px) so no gap is left */}
         <div className="sticky top-[72px] h-[calc(100vh-72px)] w-full flex items-center justify-center lg:justify-start text-white overflow-hidden bg-[#fafafa]">
-          {/* Scroll Canvas Background */}
           {!imagesPreloaded && (
-             <div className="absolute inset-0 flex items-center justify-center z-0">
-                <div className="text-orange-500 font-bold text-xl drop-shadow-lg">Loading Experience... {loadingProgress}%</div>
-             </div>
+            <div className="absolute inset-0 flex items-center justify-center z-0">
+              <div className="text-orange-500 font-bold text-xl drop-shadow-lg">Loading Experience... {loadingProgress}%</div>
+            </div>
           )}
           <canvas
             ref={canvasRef}
-            /* Object-top ensures we see the very top frame without crop */
             className="absolute inset-0 w-full h-full object-cover object-top z-0 transition-opacity duration-1000"
             style={{ opacity: imagesPreloaded ? 1 : 0 }}
           ></canvas>
-          
+
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/50 lg:bg-gradient-to-r lg:from-black/60 lg:via-black/20 lg:to-transparent z-[1] pointer-events-none"></div>
-          
+
           <div className="absolute inset-0 overflow-hidden z-[1] pointer-events-none">
             {[...Array(15)].map((_, i) => (
               <div
@@ -215,10 +216,8 @@ const HomePage2 = () => {
           </div>
 
           <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 xl:px-16 mt-8 lg:mt-16">
-            {/* Flex layout to push text to far left and logo to far right */}
             <div className="flex flex-col lg:flex-row justify-between items-center w-full">
               <div className="text-center lg:text-left animate-fadeInUp max-w-xl">
-                {/* Hero typography scaled down further and on a single line */}
                 <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black mb-3 drop-shadow-2xl bg-gradient-to-r from-white via-orange-100 to-orange-200 bg-clip-text text-transparent leading-[1.15] tracking-tight whitespace-nowrap">
                   Welcome to Divya Yatra
                 </h1>
@@ -244,19 +243,16 @@ const HomePage2 = () => {
                 </div>
               </div>
 
-              {/* Downscaled Logo section pushed right - visible on mobile too */}
               <div className="flex relative items-center pointer-events-none mt-8 lg:mt-0">
                 <div className="relative w-48 h-48 md:w-56 md:h-56 lg:w-[260px] lg:h-[260px] flex items-center justify-center">
                   <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-600/20 rounded-full blur-2xl animate-pulse"></div>
                   <div className="absolute w-full h-full border border-orange-400/20 rounded-full animate-[spin_20s_linear_infinite]"></div>
                   <div className="absolute w-[85%] h-[85%] border border-white/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
 
-                  {/* Circular Logo Container */}
                   <div className="relative z-20 flex flex-col items-center">
                     <div className="w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 rounded-full overflow-hidden border-2 md:border-4 border-orange-400/40 shadow-[0_0_30px_rgba(234,88,12,0.4)] bg-transparent">
                       <img src={logo} alt="Divya Yatra Logo" className="w-full h-full object-cover filter brightness-110" />
                     </div>
-                    {/* Tiny quote element */}
                     <div className="flex flex-col items-center mt-3 md:mt-4 z-30">
                       <div className="w-6 md:w-8 h-1 bg-gradient-to-r from-orange-400 to-red-500 rounded-full mb-1 shadow-[0_0_10px_rgba(234,88,12,0.6)]"></div>
                       <p className="text-[8px] md:text-[10px] lg:text-xs text-orange-100 font-bold tracking-[0.2em] uppercase whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
@@ -267,7 +263,6 @@ const HomePage2 = () => {
                   <div className="absolute inset-0 rounded-full border border-orange-400/20 scale-110 animate-pulse"></div>
                 </div>
 
-                {/* Scaled orbital rings */}
                 <div className="absolute inset-0 animate-[orbit_15s_linear_infinite] flex items-center justify-center pointer-events-none">
                   <div className="relative w-48 h-48 md:w-56 md:h-56 lg:w-[260px] lg:h-[260px] border border-white/10 rounded-full flex items-center justify-center">
                     <div className="absolute top-0 w-2 h-2 md:w-3 md:h-3 bg-gradient-to-br from-orange-300 to-red-500 rounded-full shadow-[0_0_10px_rgba(234,88,12,0.8)]"></div>
@@ -280,6 +275,47 @@ const HomePage2 = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* QUICK FINDER SECTION - KEPT STYLED BUT ORIGINAL SIZE */}
+      <section className="relative z-20 py-12">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="bg-white/90 backdrop-blur-3xl border border-orange-100 rounded-[2.5rem] shadow-[0_20px_50px_-10px_rgba(234,88,12,0.15)] p-3 md:p-4 flex flex-col md:flex-row items-center gap-4 hover:shadow-[0_30px_70px_-15px_rgba(234,88,12,0.25)] transition-all duration-500">
+            <div className="px-6 py-2 border-r border-orange-100 hidden lg:flex flex-col items-center">
+              <Zap className="text-orange-400 mb-1" size={20} />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Hub</span>
+            </div>
+            
+            <div className="flex-1 w-full grid grid-cols-5 gap-2 md:gap-6 px-2">
+              {[
+                { id: 'temple', label: 'Mandir', icon: <Milestone size={20} />, color: 'bg-pink-400', aura: 'bg-pink-400/5' },
+                { id: 'restaurant', label: 'Food', icon: <Utensils size={20} />, color: 'bg-amber-400', aura: 'bg-amber-400/5' },
+                { id: 'hospital', label: 'Medical', icon: <Hospital size={20} />, color: 'bg-red-400', aura: 'bg-red-400/5' },
+                { id: 'police', label: 'Police', icon: <Shield size={20} />, color: 'bg-blue-500', aura: 'bg-blue-500/5' },
+                { id: 'hotel', label: 'Stay', icon: <Hotel size={20} />, color: 'bg-purple-500', aura: 'bg-purple-500/5' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(`/nearby?category=${item.id}`)}
+                  className="group flex flex-col items-center gap-2 py-2 rounded-2xl hover:bg-orange-50/30 transition-all relative"
+                >
+                  <div className={`absolute inset-0 ${item.aura} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-md`}></div>
+                  <div className={`${item.color} w-10 h-10 md:w-14 md:h-14 rounded-xl shadow-lg border-2 border-white flex items-center justify-center text-white relative z-10 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110`}>
+                    {item.icon}
+                  </div>
+                  <span className="text-[9px] md:text-[11px] font-bold text-slate-400 tracking-tight uppercase group-hover:text-orange-500 relative z-10 transition-colors">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            
+            <div className="hidden xl:flex flex-col items-center px-8 border-l border-orange-100">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mb-1"></div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">Live Navigation</span>
             </div>
           </div>
         </div>
@@ -534,87 +570,17 @@ const HomePage2 = () => {
         </div>
       </button>
 
-
       {/* Custom Styles */}
-      < style jsx > {`
-        /* Extra CSS (if not using Tailwind) */
-        .floating-bot-btn {
-          position: fixed;
-          bottom: 20px;
-          left: 20px;
-          z-index: 9999;
-          background: #eb651eff;
-          border-radius: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-          transition: transform 0.2s ease-in-out;
-        }
-        .floating-bot-btn img {
-          width: 48px;
-          height: 48px;
-        }
-        @media (max-width: 768px) {
-          .floating-bot-btn img {
-            width: 36px;
-            height: 36px;
-          }
-        }
-        .floating-bot-btn:hover {
-          transform: scale(1.05);
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
-        .animate-fadeIn {
-          animation: fadeIn 1s ease-out;
-        }
-
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out;
-        }
-
-        /* Smooth scrolling */
-        html {
-          scroll-behavior: smooth;
-        }
-
-        /* Custom gradient text */
-        .gradient-text {
-          background: linear-gradient(135deg, #ea580c, #dc2626);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        @keyframes orbit {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style >
+        .animate-fadeInUp { animation: fadeInUp 0.6s ease-out; }
+        html { scroll-behavior: smooth; }
+        @keyframes orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}} />
     </div >
   );
 };

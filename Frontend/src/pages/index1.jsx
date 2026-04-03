@@ -449,69 +449,69 @@ const HomePage2 = () => {
 
         {/* ── HACKATHON IMPACT SECTION ── */}
         <section id="about" className="mb-12 lg:mb-20">
-          <div className="text-center mb-12 lg:mb-20">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 border border-orange-200 mb-6">
-              <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse"></span>
-              <span className="text-[11px] font-black uppercase tracking-widest text-orange-700">Built For Bharat's Devotees</span>
+          <div className="text-center mb-8 lg:mb-20">
+            <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1 lg:py-1.5 rounded-full bg-orange-100 border border-orange-200 mb-4 lg:mb-6">
+              <span className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-orange-600 animate-pulse"></span>
+              <span className="text-[9px] lg:text-[11px] font-black uppercase tracking-widest text-orange-700">Built For Bharat's Devotees</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-black py-2 mb-2 lg:mb-4 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent tracking-tight leading-tight">
+            <h2 className="text-2xl md:text-5xl font-black py-1 mb-1 lg:mb-4 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent tracking-tight leading-tight">
               The Problem We Solve
             </h2>
-            <div className="w-16 h-1 lg:w-24 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full mb-6"></div>
-            <p className="text-base md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              Over <strong className="text-orange-600">50 million pilgrims</strong> visit Ujjain annually. During Kumbh Mela, stampedes, lost devotees, zero digital infrastructure & opaque ticketing become <strong className="text-red-600">life-threatening challenges</strong>. Divya Yatra is the <strong className="text-orange-700">first unified smart platform</strong> built to protect, guide & serve every pilgrim digitally.
+            <div className="w-12 h-1 lg:w-24 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full mb-4 lg:mb-6"></div>
+            <p className="text-sm md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed px-2">
+              Over <strong className="text-orange-600">50 million pilgrims</strong> visit Ujjain annually. In Kumbh Mela, stampedes & lost devotees are <strong className="text-red-600">life-threatening challenges</strong>. Divya Yatra is a <strong className="text-orange-700">smart platform</strong> built to serve every pilgrim.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-16">
+          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 mb-10 lg:mb-16">
             {[
-              { stat: '50M+', label: 'Annual Pilgrims', sub: 'At Ujjain alone', color: 'text-orange-600' },
-              { stat: '7', label: 'AI Modules', sub: 'Fully integrated', color: 'text-red-600' },
-              { stat: '360°', label: 'Virtual Darshan', sub: 'From anywhere', color: 'text-purple-600' },
-              { stat: 'Real-time', label: 'Crowd Safety', sub: 'YOLOv8 powered', color: 'text-blue-600' },
-              { stat: '2028', label: 'Simhastha Ready', sub: 'Kumbh Mela prep', color: 'text-emerald-600' },
-              { stat: '24/7', label: 'Support', sub: 'Multilingual AI', color: 'text-amber-600' },
+              { stat: '50M+', label: 'Pilgrims', sub: 'Ujjain', color: 'text-orange-600' },
+              { stat: '7', label: 'AI', sub: 'Modules', color: 'text-red-600' },
+              { stat: '360°', label: 'Darshan', sub: 'Virtual', color: 'text-purple-600' },
+              { stat: 'Live', label: 'Safety', sub: 'YOLOv8', color: 'text-blue-600' },
+              { stat: '2028', label: 'Kumbh', sub: 'Ready', color: 'text-emerald-600' },
+              { stat: '24/7', label: 'AI Support', sub: 'Multilingual', color: 'text-amber-600' },
             ].map((item, idx) => (
-              <div key={idx} className="group bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-md hover:shadow-xl border border-orange-50 hover:border-orange-200 transition-all duration-300 hover:-translate-y-1">
-                <div className={`text-2xl md:text-3xl font-black ${item.color} mb-1`}>{item.stat}</div>
-                <div className="text-[11px] font-black text-slate-700 uppercase tracking-tight mb-1">{item.label}</div>
-                <div className="text-[9px] text-slate-400 font-semibold">{item.sub}</div>
+              <div key={idx} className="group bg-white/80 backdrop-blur-sm rounded-xl p-2.5 md:p-4 text-center shadow-md hover:shadow-xl border border-orange-50 hover:border-orange-200 transition-all duration-300">
+                <div className={`text-lg md:text-3xl font-black ${item.color} mb-0.5`}>{item.stat}</div>
+                <div className="text-[8px] md:text-[11px] font-black text-slate-700 uppercase tracking-tight mb-0.5">{item.label}</div>
+                <div className="text-[7px] md:text-[9px] text-slate-400 font-semibold">{item.sub}</div>
               </div>
             ))}
           </div>
 
-          <div className="mb-12">
-            <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-[2.5rem] p-8 lg:p-12 text-center shadow-lg border border-orange-100">
+          <div className="mb-8 lg:mb-12">
+            <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-[1.5rem] md:rounded-[2.5rem] p-6 lg:p-12 text-center shadow-lg border border-orange-100">
               <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 to-transparent"></div>
               <div className="relative z-10 w-full max-w-4xl mx-auto">
-                <div className="text-orange-600 text-2xl md:text-3xl lg:text-4xl font-serif mb-4 leading-relaxed font-bold drop-shadow-sm">
+                <div className="text-orange-600 text-lg md:text-3xl lg:text-4xl font-serif mb-2 leading-relaxed font-bold drop-shadow-sm">
                   "आकाशे तारकं लिङ्गं पाताले हाटकेश्वरम् ।<br /> मर्त्यलोके महाकालं लिङ्गत्रय नमोऽस्तु ते ॥"
                 </div>
-                <p className="text-slate-500 text-[10px] md:text-xs tracking-widest uppercase font-bold">
+                <p className="text-slate-500 text-[8px] md:text-xs tracking-widest uppercase font-bold px-4">
                   (In the sky is Taraka Linga, in the netherworld Hatakeshwara, and on earth Mahakala. Salutations to the three Lingas)
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="relative overflow-hidden bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 rounded-3xl p-8 lg:p-14 text-white shadow-2xl">
+          <div className="relative overflow-hidden bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 rounded-2xl md:rounded-3xl p-6 md:p-14 text-white shadow-2xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 text-center lg:text-left">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full mb-4">
-                  <span className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span>
-                  <span className="text-[10px] font-black uppercase tracking-widest">Mission Mega Event</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full mb-3 lg:mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse"></span>
+                  <span className="text-[9px] font-black uppercase tracking-widest">Mission Mega Event</span>
                 </div>
-                <h3 className="text-3xl lg:text-5xl font-black tracking-tight py-2 mb-3">Simhastha Kumbh <span className="text-yellow-300">2028</span></h3>
-                <p className="text-white/80 text-base lg:text-lg max-w-2xl leading-relaxed">
-                  The world's largest gathering returns to Ujjain. Divya Yatra is engineered <strong className="text-white">from day one</strong> to scale — providing real-time crowd dynamics, AI emergency response, and resilient infrastructure for an estimated <strong className="text-yellow-200">100+ million devotees</strong>.
+                <h3 className="text-2xl lg:text-5xl font-black tracking-tight py-1 mb-2 lg:mb-3">Simhastha Kumbh <span className="text-yellow-300">2028</span></h3>
+                <p className="text-white/80 text-sm lg:text-lg max-w-2xl leading-relaxed">
+                  Divya Yatra is engineered to scale for an estimated <strong className="text-yellow-200">100+ million devotees</strong> in Ujjain’s next mega gathering.
                 </p>
               </div>
-              <div className="flex flex-col items-center gap-4 shrink-0">
-                <div className="text-6xl lg:text-8xl font-black text-white/20 leading-none select-none">2028</div>
-                <button onClick={() => navigate('/ticket')} className="px-8 py-4 bg-white text-orange-700 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-yellow-50 transition-all shadow-xl hover:shadow-2xl active:scale-95 flex items-center gap-2 group">
-                  Preview Infrastructure <span className="group-hover:translate-x-1 transition-transform">→</span>
+              <div className="flex flex-col items-center gap-3 lg:gap-4 shrink-0">
+                <div className="hidden lg:block text-8xl font-black text-white/20 leading-none select-none">2028</div>
+                <button onClick={() => navigate('/ticket')} className="w-full sm:w-auto px-6 py-3 lg:px-8 lg:py-4 bg-white text-orange-700 rounded-xl lg:rounded-2xl font-black text-xs lg:text-sm uppercase tracking-widest hover:bg-yellow-50 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                  Preview <span className="hidden sm:inline">Infrastructure</span> →
                 </button>
               </div>
             </div>
@@ -524,15 +524,15 @@ const HomePage2 = () => {
       {/* AI Chatbot Floating Action Button */}
       <button
         onClick={() => handleNavigation("/chatbot")}
-        className="fixed bottom-8 left-8 z-50 group flex items-center justify-center"
+        className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-50 group flex items-center justify-center"
         aria-label="AI Travel Planner ✨"
       >
         <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-        <div className="relative h-14 w-14 bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-110 group-active:scale-95">
-          <Bot size={28} className="text-indigo-300" />
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+        <div className="relative h-10 w-10 md:h-14 md:w-14 bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-110 group-active:scale-95">
+          <Bot className="w-5 h-5 md:w-7 md:h-7 text-indigo-300" />
+          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 md:h-4 md:w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-violet-500 text-[8px] items-center justify-center font-bold">✨</span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 md:h-4 md:w-4 bg-violet-500 text-[5px] md:text-[8px] items-center justify-center font-bold">✨</span>
           </span>
         </div>
       </button>
@@ -540,15 +540,15 @@ const HomePage2 = () => {
       {/* Stylish Floating Live Darshan Button */}
       <button
         onClick={() => handleNavigation("/live-darshan")}
-        className="hidden sm:flex fixed bottom-8 right-8 z-50 group items-center"
+        className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-50 group flex items-center"
       >
         <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-500 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-        <div className="relative flex items-center gap-3 bg-black/60 backdrop-blur-xl border border-white/20 text-white px-6 py-3.5 rounded-full shadow-2xl transition-all duration-300 group-hover:scale-105 group-active:scale-95">
+        <div className="relative flex items-center gap-1.5 md:gap-3 bg-black/60 backdrop-blur-xl border border-white/20 text-white px-3 md:px-6 py-2 md:py-3.5 rounded-full shadow-2xl transition-all duration-300 group-hover:scale-105 group-active:scale-95">
           <div className="relative flex items-center justify-center">
-            <span className="absolute w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-            <span className="relative w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)]"></span>
+            <span className="absolute w-2 h-2 md:w-3 md:h-3 bg-red-500 rounded-full animate-ping"></span>
+            <span className="relative w-1.5 h-1.5 md:w-2 md:h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)]"></span>
           </div>
-          <span className="text-sm font-black tracking-widest uppercase">Live Darshan</span>
+          <span className="text-[8px] md:text-sm font-black tracking-widest uppercase">Live Darshan</span>
         </div>
       </button>
 

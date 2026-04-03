@@ -16,10 +16,19 @@ export default function ChatAgent({
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isResponding, setIsResponding] = useState(false);
-  const [language, setLanguage] = useState('Hindi');
-  const [isListening, setIsListening] = useState(false);
+    const [language, setLanguage] = useState('Hindi');
+    const [isResponding, setIsResponding] = useState(false);
+    const [isListening, setIsListening] = useState(false);
   const speechRecognition = useRef(null);
+
+  const suggestions = [
+    { en: "Plan My Yatra 🚩", hi: "योजना बनाएं 🚩" },
+    { en: "Mahakaleshwar visit", hi: "महाकालेश्वर दर्शन" },
+    { en: "Best food in Ujjain", hi: "प्रसिद्ध भोजन" },
+    { en: "Temple timings", hi: "मंदिर समय" },
+    { en: "Emergency helpline", hi: "हेल्पलाइन" }
+  ];
+
   const {
     toast
   } = useToast();
@@ -168,7 +177,7 @@ export default function ChatAgent({
     let isActive = true;
     const startChat = async () => {
       setIsLoading(true);
-      const initialText = language === 'Hindi' ? 'नमस्ते! मैं RoamAI हूँ। आपकी दिव्य यात्रा की योजना बनाने में मैं आपकी मदद कर सकता हूँ। आप कहां जाना चाहते हैं?' : 'Hello! I am RoamAI. I can help you plan your sacred journey. Where would you like to travel?';
+      const initialText = language === 'Hindi' ? 'जय श्री महाकाल! मैं RoamAI हूँ। मैं आपकी दिव्य यात्रा की योजना बनाने में मदद कर सकता हूँ। क्या आप शुरू करना चाहेंगे?' : 'Jai Shree Mahakal! I am RoamAI. I can help you plan your sacred journey. Would you like to start planning?';
       try {
         const audioResult = await getTextToSpeech({
           text: initialText,
@@ -181,8 +190,6 @@ export default function ChatAgent({
           audioUrl: audioResult.data?.media
         };
         setMessages([initialMessage]);
-
-        // Autoplay initial greeting if audio is ready
         if (audioResult.data?.media) {
           playAudio(audioResult.data.media);
         }
@@ -296,6 +303,14 @@ export default function ChatAgent({
               className: "animate-spin"
             }), " Consulting the stars..."]
           })
+        }), messages.length <= 1 && /*#__PURE__*/_jsx("div", {
+          className: "flex flex-wrap gap-2 pt-6 max-w-2xl mx-auto animate-fade-in-up",
+          children: suggestions.map((s, idx) => /*#__PURE__*/_jsx("button", {
+            type: "button",
+            onClick: () => handleSendMessage(null, language === 'Hindi' ? s.hi : s.en),
+            className: "px-4 py-2 rounded-full border border-orange-200 bg-white hover:bg-orange-50 text-slate-600 font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-sm",
+            children: language === 'Hindi' ? s.hi : s.en
+          }, idx))
         }), /*#__PURE__*/_jsx("div", {
           ref: messagesEndRef
         })]

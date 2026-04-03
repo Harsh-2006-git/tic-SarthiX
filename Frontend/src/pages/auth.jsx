@@ -83,36 +83,36 @@ const Auth = ({ setIsAuthenticated }) => {
   ];
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-slate-50 font-['Outfit'] select-none overflow-hidden p-4">
+    <div className="relative h-[100dvh] w-full flex items-center justify-center bg-slate-50 font-['Outfit'] select-none overflow-hidden p-3 md:p-4">
       {/* Decorative Orbs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/30 rounded-full blur-[120px] -mr-48 -mt-48 transition-all duration-1000 pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-orange-100/30 rounded-full blur-[100px] -ml-32 -mb-32 transition-all duration-1000 pointer-events-none"></div>
 
-      <div className="w-full max-w-7xl flex flex-col lg:flex-row gap-12 lg:gap-24 relative z-10 p-6 items-center">
+      <div className="w-full max-w-7xl h-full flex flex-col lg:flex-row gap-4 md:gap-12 lg:gap-24 relative z-10 p-2 md:p-6 items-center justify-center">
         
         {/* Left Section: Branding & Features */}
-        <div className="w-full lg:w-3/5 space-y-10 animate-in fade-in slide-in-from-left-8 duration-700">
-          <div className="flex items-center gap-4">
-            <div className="w-24 h-24 flex items-center justify-center">
+        <div className="w-full lg:w-3/5 space-y-4 md:space-y-10 animate-in fade-in slide-in-from-left-8 duration-700">
+          <div className="flex items-center gap-2 md:gap-4 justify-center lg:justify-start">
+            <div className="w-12 h-12 md:w-24 md:h-24 flex items-center justify-center">
                <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-               <h3 className="text-3xl font-black text-slate-800 tracking-tight leading-none">DIVYA YATRA</h3>
-               <span className="text-xs font-bold text-orange-600 uppercase tracking-widest">Pilgrim Navigator</span>
+               <h3 className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none uppercase">DIVYA YATRA</h3>
+               <span className="text-[8px] md:text-xs font-bold text-orange-600 uppercase tracking-widest">Pilgrim Navigator</span>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter leading-[0.95]">
+          <div className="space-y-2 md:space-y-6 text-center lg:text-left">
+            <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter leading-[0.95]">
               Step into the <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-rose-500 to-orange-500">Divine Journey</span>
             </h1>
-            <p className="max-w-xl text-slate-500 text-lg font-medium leading-relaxed">
-              A unified portal for Pilgrims, Trust, and Administration to navigate the sacred corridors with intelligence and grace.
+            <p className="max-w-xl mx-auto lg:mx-0 text-slate-500 text-xs md:text-lg font-medium leading-relaxed">
+              A unified portal for Pilgrims, Trust, and Administration.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="hidden md:grid grid-cols-1 md:grid-cols-2 gap-4">
             {featureCards.map((feature, idx) => (
               <div key={idx} className="flex gap-4 p-5 rounded-3xl bg-white border border-slate-100 backdrop-blur-sm transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-200/40 group">
                 <div className={`p-3 h-fit rounded-[1.25rem] ${feature.bg} ${feature.color} group-hover:scale-110 transition-transform`}>
@@ -128,8 +128,8 @@ const Auth = ({ setIsAuthenticated }) => {
         </div>
 
         {/* Right Section: Sign In Card */}
-        <div className="w-full lg:w-2/5 animate-in fade-in slide-in-from-right-8 duration-700">
-           <div className="bg-white rounded-[3.5rem] p-10 lg:p-14 shadow-[0_32px_120px_-20px_rgba(0,0,0,0.08)] text-center border border-slate-100 flex flex-col justify-between min-h-[600px] relative overflow-hidden">
+        <div className="w-full lg:w-2/5 animate-in fade-in slide-in-from-right-8 duration-700 max-w-lg mx-auto flex flex-col justify-center">
+           <div className="bg-white rounded-2xl md:rounded-[3.5rem] p-4 md:p-10 lg:p-14 shadow-[0_32px_120px_-20px_rgba(0,0,0,0.08)] text-center border border-slate-100 flex flex-col justify-center min-h-0 md:min-h-[600px] relative overflow-hidden">
               
               <div className="relative z-10">
                 <div className="space-y-6 flex flex-col items-center">
@@ -137,7 +137,7 @@ const Auth = ({ setIsAuthenticated }) => {
                      <Globe size={12} /> DIVINE ACCESS
                   </div>
                   <div className="space-y-2">
-                    <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-none">
+                    <h2 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight leading-none">
                       {step === "initial" ? "Welcome Back" : "Complete Profile"}
                     </h2>
                     <p className="text-slate-400 text-sm font-medium">
@@ -146,39 +146,39 @@ const Auth = ({ setIsAuthenticated }) => {
                   </div>
                 </div>
 
-                <div className="mt-10">
-                   {step === "initial" ? (
-                     <div className="space-y-8 flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
-                        <div className="w-full p-8 rounded-[2rem] bg-slate-50/80 border border-slate-100 flex flex-col items-center justify-center space-y-6 shadow-inner">
-                           <div className="relative -mt-16 mb-6 flex items-center justify-center">
-                              <div className="relative w-22 h-22 bg-white rounded-[2.75rem] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-slate-100 flex items-center justify-center overflow-hidden">
-                                 {/* Internal glass structural layers */}
-                                 <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-slate-200/20 to-transparent"></div>
-                                 
-                                 <div className="w-15 h-15 rounded-[1.75rem] bg-slate-50 border border-slate-200/60 flex items-center justify-center p-2.5 shadow-inner">
-                                    <div className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                                       <User className="text-slate-900" size={22} />
-                                    </div>
-                                 </div>
-                              </div>
-                           </div>
-                           <div className="text-center space-y-1">
-                              <span className="text-slate-800 font-bold block text-lg">One-Tap Authentication</span>
-                              <span className="text-slate-400 text-xs font-medium">Continue securely with your Google account</span>
-                           </div>
-                           <div className="w-full transform transition-all hover:scale-[1.02] flex justify-center pt-2">
-                             <GoogleLogin
-                               onSuccess={handleGoogleSuccess}
-                               onError={() => setMessage("Connection Failed")}
-                               useOneTap
-                               theme="outline"
-                               shape="pill"
-                               size="large"
-                               width="300px"
-                             />
-                           </div>
-                        </div>
-                     </div>
+                <div className="mt-4 md:mt-10">
+                    {step === "initial" ? (
+                      <div className="space-y-4 md:space-y-8 flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
+                         <div className="w-full p-6 md:p-8 rounded-[2rem] bg-slate-50/80 border border-slate-100 flex flex-col items-center justify-center space-y-4 md:space-y-6 shadow-inner">
+                            <div className="hidden md:block relative -mt-16 mb-6">
+                               <div className="relative w-22 h-22 bg-white rounded-[2.75rem] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-slate-100 flex items-center justify-center overflow-hidden">
+                                  {/* Internal glass structural layers */}
+                                  <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-slate-200/20 to-transparent"></div>
+                                  
+                                  <div className="w-15 h-15 rounded-[1.75rem] bg-slate-50 border border-slate-200/60 flex items-center justify-center p-2.5 shadow-inner">
+                                     <div className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                                        <User className="text-slate-900" size={22} />
+                                     </div>
+                                  </div>
+                               </div>
+                            </div>
+                            <div className="hidden md:block text-center space-y-1">
+                               <span className="text-slate-800 font-bold block text-lg">One-Tap Authentication</span>
+                               <span className="text-slate-400 text-xs font-medium">Continue securely with your Google account</span>
+                            </div>
+                            <div className="w-full transform transition-all hover:scale-[1.02] flex justify-center py-2">
+                              <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => setMessage("Connection Failed")}
+                                useOneTap
+                                theme="outline"
+                                shape="pill"
+                                size="large"
+                                width="250px"
+                              />
+                            </div>
+                         </div>
+                      </div>
                    ) : (
                      <form className="space-y-4 text-left animate-in fade-in slide-in-from-right-8 duration-500">
                         <div className="space-y-3">
@@ -259,11 +259,11 @@ const Auth = ({ setIsAuthenticated }) => {
                 </div>
               </div>
 
-              <div className="pt-8 w-full relative z-10 mt-auto">
-                 <div className="w-full relative h-[110px] rounded-[1rem] overflow-hidden border border-slate-100 flex items-center bg-slate-50 shadow-inner group">
+              <div className="pt-4 md:pt-8 w-full relative z-10 mt-auto">
+                 <div className="w-full relative h-[70px] md:h-[110px] rounded-[1rem] overflow-hidden border border-slate-100 flex items-center bg-slate-50 shadow-inner group">
                     <div className="flex animate-marquee hover:[animation-play-state:paused] w-max py-2">
                       {[...slides, ...slides, ...slides, ...slides].map((imgUrl, index) => (
-                        <div key={index} className="w-[160px] h-[95px] flex-shrink-0 mx-[4px]">
+                        <div key={index} className="w-[100px] md:w-[160px] h-[60px] md:h-[95px] flex-shrink-0 mx-[4px]">
                            <img src={imgUrl} alt="Sacred site" className="w-full h-full object-cover rounded-lg border border-slate-200 shadow-sm" />
                         </div>
                       ))}

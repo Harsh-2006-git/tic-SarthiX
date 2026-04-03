@@ -1,16 +1,20 @@
 import express from "express";
 import { genkit } from "genkit";
 import { googleAI } from "@genkit-ai/google-genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import wav from "wav";
 import { z } from "zod";
 
 const router = express.Router();
 
-// ── Genkit AI initialisation ────────────────────────────────────────────────
+// ── Genkit AI initialisation (for chat & TTS) ────────────────────────────────
 const ai = genkit({
-  plugins: [googleAI()],
-  model: "googleai/gemini-2.0-flash",
+  plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
+  model: "googleai/gemini-1.5-flash",
 });
+
+// ── Direct Google AI SDK (for itinerary - more reliable JSON output) ─────────
+const getGenAI = () => new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ── Helper: PCM buffer → base64 WAV ─────────────────────────────────────────
 function toWav(pcmData, channels = 1, rate = 24000, sampleWidth = 2) {
@@ -97,7 +101,7 @@ router.post("/itinerary", async (req, res) => {
     }
 
     const prompt = `You are a travel agent specializing in creating personalized pilgrimage itineraries.
-Generate a detailed travel itinerary and output it as a JSON object.
+Generate a detailed travel itinerary as a valid JSON object only — no extra text, no markdown, no code fences.
 
 User details:
 - Origin: ${origin}
@@ -108,57 +112,61 @@ User details:
 - Budget: ${budget || "Modest"}
 - Style: ${style || "Peaceful"}
 
-The entire response, including all text in the generated itinerary, should be in: ${language}.
+All text in the response should be in: ${language}.
 
-For each day in the daily_plan:
-- Provide specific hotel suggestions with name, price, and rating.
-- Provide specific transportation suggestions (train/bus/taxi) with mode, details, and price.
-- List cultural, religious, and sightseeing activities.
-- Provide an estimated cost for each day.
-Provide a total_estimated_cost for the entire trip.
-Add optional helpful notes/tips for pilgrims.`;
+Return ONLY this JSON structure (no markdown, no backticks):
+{
+  "itinerary": {
+    "title": "string",
+    "destination": "string",
+    "departureDate": "string",
+    "arrivalDate": "string",
+    "numberOfPeople": number,
+    "budget": "string",
+    "style": "string",
+    "total_estimated_cost": "string",
+    "notes": "string (optional tips for pilgrims)",
+    "daily_plan": [
+      {
+        "day": 1,
+        "activities": ["activity1", "activity2"],
+        "estimated_cost": "string",
+        "accommodation": { "name": "string", "price": "string", "rating": "string" },
+        "transportation_options": [{ "mode": "string", "details": "string", "price": "string" }]
+      }
+    ]
+  }
+}`;
 
-    const { output } = await ai.generate({
-      prompt,
-      output: {
-        schema: z.object({
-          itinerary: z.object({
-            title: z.string(),
-            destination: z.string(),
-            departureDate: z.string(),
-            arrivalDate: z.string(),
-            numberOfPeople: z.number(),
-            budget: z.string(),
-            style: z.string(),
-            total_estimated_cost: z.string(),
-            notes: z.string().optional(),
-            daily_plan: z.array(
-              z.object({
-                day: z.number(),
-                activities: z.array(z.string()),
-                estimated_cost: z.string(),
-                accommodation: z.object({
-                  name: z.string(),
-                  price: z.string(),
-                  rating: z.string(),
-                }).optional(),
-                transportation_options: z.array(
-                  z.object({
-                    mode: z.string(),
-                    details: z.string(),
-                    price: z.string(),
-                  })
-                ),
-              })
-            ),
-          }),
-        }),
+    // Use direct Google AI SDK for reliable JSON output
+    const genAI = getGenAI();
+    const model = genAI.getGenerativeModel(
+      {
+        model: "gemini-1.5-flash-latest",
+        generationConfig: {
+          responseMimeType: "application/json",
+        },
       },
-    });
+      { apiVersion: "v1" }
+    );
 
-    return res.json({ data: output });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    // Parse the JSON response
+    let parsed;
+    try {
+      // Strip any accidental markdown code fences
+      const clean = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      parsed = JSON.parse(clean);
+    } catch (parseErr) {
+      console.error("JSON parse error:", parseErr.message, "\nRaw:", text.slice(0, 300));
+      return res.status(500).json({ error: "AI returned invalid JSON. Please try again." });
+    }
+
+    return res.json({ data: parsed });
   } catch (err) {
-    console.error("Chatbot /itinerary error:", err);
+    console.error("Chatbot /itinerary error:", err.message || err);
     return res.status(500).json({ error: err.message || "Failed to generate itinerary" });
   }
 });
@@ -175,7 +183,7 @@ router.post("/tts", async (req, res) => {
     const voiceName = language === "Hindi" ? "Achernar" : "Algenib";
 
     const { media } = await ai.generate({
-      model: googleAI.model("gemini-2.5-flash-preview-tts"),
+      model: "googleai/gemini-1.5-flash-latest",
       config: {
         responseModalities: ["AUDIO"],
         speechConfig: {

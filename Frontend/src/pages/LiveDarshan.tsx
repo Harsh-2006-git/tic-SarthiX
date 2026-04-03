@@ -4,7 +4,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 const LiveDarshan = () => {
-  const videoId = "nQ-D5_wP1As"; // Your live video ID
+  const videoId = "q_gS3o_A9aA"; // Your live video ID
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 pt-28">

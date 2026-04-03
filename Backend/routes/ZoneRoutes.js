@@ -3,6 +3,7 @@ import {
   scanZone,
   getZoneDensity,
   getUserZoneHistory,
+  recordLiveLocation,
 } from "../controllers/zoneController.js";
 import authenticateClient from "../middlewares/authMiddleware.js";
 import {
@@ -15,6 +16,7 @@ const router = express.Router();
 // Scan QR/RFID and update zone
 // ✅ Enter / Exit handled by same route
 router.post("/scan", scanZone);
+router.post("/record-location", authenticateClient, recordLiveLocation);
 
 // ✅ Zone density
 router.get("/density", getZoneDensity);

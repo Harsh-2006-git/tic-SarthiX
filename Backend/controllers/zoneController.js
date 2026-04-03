@@ -1,4 +1,5 @@
 // controllers/zoneController.js
+import { Op } from "sequelize";
 import Client from "../models/client.js";
 import Zone from "../models/zone.js";
 import ZoneTracker from "../models/zoneTracker.js";
@@ -67,86 +68,101 @@ export const getInfoFromQRScan = async (req, res) => {
 // controllers/zoneController.js
 export const scanZone = async (req, res) => {
   try {
-    const { unique_code, zone_id } = req.body;
+    const { unique_code, zone_id, latitude, longitude } = req.body;
     let client = await Client.findOne({ where: { unique_code } });
+    let familyMember = null;
 
-    // If not a main client, check family members
     if (!client) {
-      const familyMember = await FamilyMember.findOne({
+      familyMember = await FamilyMember.findOne({
         where: { unique_code },
-        include: [{ model: Client, as: 'client' }]
+        include: [{ model: Client, as: "client" }]
       });
-
-      if (familyMember) {
-        // For tracking purposes, we treat them as their linked client or a separate entity?
-        // Usually, tracking is per QR code. But ZoneTracker uses client_id.
-        // I should probably update models to support participant_id or just use client_id for now.
-        // Actually, let's treat family members as their own entities for tracking if we want precision.
-        // But for SIMPLICITY in this MVP, I'll use the main client_id.
-        client = familyMember.client;
-      }
     }
 
-    if (!client) return res.status(404).json({ message: "Participant not found" });
+    if (!client && !familyMember) {
+      return res.status(404).json({ message: "Participant not found" });
+    }
 
-    // Get the last scan for this client
+    const trackerWhere = client
+      ? { client_id: client.client_id }
+      : { member_id: familyMember.member_id };
+
+    // Get the last scan
     const lastScan = await ZoneTracker.findOne({
-      where: { client_id: client.client_id },
+      where: trackerWhere,
       order: [["scanned_at", "DESC"]],
     });
 
-    // ✅ If zone_id is provided → Enter/Move
+    // If zone_id provided -> Enter/Move
     if (zone_id) {
-      // If client was in a different zone previously, decrement that zone's count
-      if (lastScan && lastScan.current_zone_id !== zone_id) {
+      const targetZoneId = parseInt(zone_id);
+
+      // Auto-exit handling: If they were in a different zone, decrement that zone's count
+      if (lastScan && lastScan.current_zone_id && parseInt(lastScan.current_zone_id) !== targetZoneId) {
+        // 1. Decrement count in the previous zone
         await Zone.decrement("client_count", {
           where: { zone_id: lastScan.current_zone_id },
         });
+
+        // 2. Create an explicit "Exit" record for history to show they left the previous zone
+        await ZoneTracker.create({
+          client_id: client ? client.client_id : null,
+          member_id: familyMember ? familyMember.member_id : null,
+          last_zone_id: lastScan.current_zone_id,
+          current_zone_id: null,
+          latitude: latitude || null,
+          longitude: longitude || null,
+          scanned_at: new Date(Date.now() - 1000), // 1 second before the move
+        });
       }
 
-      // Increment the new zone's count
       await Zone.increment("client_count", {
-        where: { zone_id },
+        where: { zone_id: targetZoneId },
       });
 
-      // Create new tracker record
       const newTracker = await ZoneTracker.create({
-        client_id: client.client_id,
+        client_id: client ? client.client_id : null,
+        member_id: familyMember ? familyMember.member_id : null,
         last_zone_id: lastScan ? lastScan.current_zone_id : null,
-        current_zone_id: zone_id,
+        current_zone_id: targetZoneId,
+        latitude: latitude || null,
+        longitude: longitude || null,
       });
 
       return res.json({
         message: "Zone entered successfully",
         tracker: newTracker,
-        previous_zone: lastScan ? lastScan.current_zone_id : null,
-        new_zone: zone_id,
+        participant: client ? client.name : familyMember.name,
+        locationDetected: latitude && longitude ? "Success" : "Manual",
       });
     }
 
-    // ✅ If no zone_id → Exit
+    // Exit logic
     if (lastScan && lastScan.current_zone_id) {
       await Zone.decrement("client_count", {
         where: { zone_id: lastScan.current_zone_id },
       });
 
       const exitTracker = await ZoneTracker.create({
-        client_id: client.client_id,
+        client_id: client ? client.client_id : null,
+        member_id: familyMember ? familyMember.member_id : null,
         last_zone_id: lastScan.current_zone_id,
         current_zone_id: null,
+        latitude: latitude || null,
+        longitude: longitude || null,
       });
 
       return res.json({
         message: "Zone exit recorded successfully",
         tracker: exitTracker,
-        exited_zone: lastScan.current_zone_id,
+        participant: client ? client.name : familyMember.name,
       });
     }
 
-    return res.status(400).json({ message: "Client not in any zone" });
+    return res.status(400).json({ message: "Participant not in any zone" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Scan Error:", error);
+    res.status(500).json({ message: "Server error during scan" });
   }
 };
 export const getZoneDensity = async (req, res) => {
@@ -185,11 +201,7 @@ export const getUserZoneHistory = async (req, res) => {
     }
 
     // Mode 2: Lookup by phone or email (POST request)
-    else if (
-      req.method === "POST" &&
-      req.body &&
-      (req.body.phone || req.body.email)
-    ) {
+    else if (req.method === "POST" && req.body && (req.body.phone || req.body.email)) {
       const client = await Client.findOne({
         where: {
           ...(req.body.phone && { phone: req.body.phone }),
@@ -200,26 +212,44 @@ export const getUserZoneHistory = async (req, res) => {
       if (!client) {
         return res.status(404).json({ message: "User not found" });
       }
-
       client_id = client.client_id;
     }
-
-    // No valid input
     else {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Provide token for own history (GET) or phone/email for others (POST)",
-        });
+      return res.status(400).json({ message: "Invalid request" });
+    }
+
+    // NEW: Handle filtering by specific member_id if requested
+    const targetMemberId = (req.body && req.body.member_id) || (req.query && req.query.member_id);
+
+    let scanWhere;
+    if (targetMemberId) {
+      scanWhere = { member_id: targetMemberId };
+    } else if (req.query.type === 'self') {
+      // ONLY Primary User history
+      scanWhere = { client_id: client_id, member_id: null };
+    } else {
+      // Combined history for client and all family members
+      const familyMembers = await FamilyMember.findAll({
+        where: { client_id },
+        attributes: ['member_id']
+      });
+      const memberIds = familyMembers ? familyMembers.map(m => m.member_id) : [];
+      
+      scanWhere = {
+        [Op.or]: [
+          { client_id: client_id },
+          { member_id: { [Op.in]: memberIds } }
+        ]
+      };
     }
 
     // Fetch scan history
     const scans = await ZoneTracker.findAll({
-      where: { client_id },
+      where: scanWhere,
       include: [
         { model: Zone, as: "currentZone", attributes: ["name"] },
         { model: Zone, as: "lastZone", attributes: ["name"] },
+        { model: FamilyMember, as: "familyMember", attributes: ["name"] }
       ],
       order: [["scanned_at", "ASC"]],
     });
@@ -256,17 +286,51 @@ export const getUserZoneHistory = async (req, res) => {
         : null;
 
       return {
+        participant: scan.familyMember ? scan.familyMember.name : "Primary User",
         last_zone: scan.lastZone ? scan.lastZone.name : null,
-        current_zone: scan.currentZone.name,
+        current_zone: scan.currentZone ? scan.currentZone.name : "Exit",
+        latitude: scan.latitude,
+        longitude: scan.longitude,
         enter_time: enterTime,
         leave_time: leaveTime,
         duration_spent: durationSpent,
       };
     });
-
-    res.json({ client_id, history });
+    res.json({ client_id, history, type: targetMemberId ? 'family_member' : (req.query.type || 'combined') });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Periodic (5 min) Live Location Logging for Primary User
+export const recordLiveLocation = async (req, res) => {
+  try {
+    const { latitude, longitude } = req.body;
+    const { client_id } = req.user;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ message: "Coordinates missing" });
+    }
+
+    // Get current zone of the user
+    const lastScan = await ZoneTracker.findOne({
+      where: { client_id },
+      order: [["scanned_at", "DESC"]],
+    });
+
+    const update = await ZoneTracker.create({
+      client_id,
+      last_zone_id: lastScan ? lastScan.current_zone_id : null,
+      current_zone_id: lastScan ? lastScan.current_zone_id : null, // Logging position within current zone
+      latitude,
+      longitude,
+      scanned_at: new Date()
+    });
+
+    res.json({ message: "Location logged", tracker: update });
+  } catch (error) {
+    console.error("Loc logging error:", error);
+    res.status(500).json({ message: "Sync failed" });
   }
 };

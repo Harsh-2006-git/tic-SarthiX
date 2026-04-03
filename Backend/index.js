@@ -108,7 +108,7 @@ const initializeApp = async () => {
     console.log("🔄 Divya Yatra Server Initializing...");
     await connectDB();
     await sequelize.sync();
-    console.log("✅ Database Successfully Connected");
+    console.log("✅ Database Connected");
 
     const backendRoot = path.dirname(fileURLToPath(import.meta.url));
     initCrowdAI(backendRoot);

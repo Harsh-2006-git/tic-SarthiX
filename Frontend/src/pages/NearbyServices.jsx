@@ -11,37 +11,31 @@ import {
   Navigation,
   Search,
   Loader2,
-  ExternalLink,
   Milestone,
   LocateFixed,
-  Wifi,
+  Compass,
+  LayoutGrid,
+  ChevronRight,
+  Info,
   Map as MapIcon,
-  HelpCircle,
-  AlertCircle
+  Tent
 } from 'lucide-react';
 import axios from 'axios';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
 
-// Leaflet Marker Fix
+// Leaflet Fixes
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-let DefaultIcon = L.icon({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
+let DefaultIcon = L.icon({ iconUrl: markerIcon, shadowUrl: markerShadow, iconSize: [25, 41], iconAnchor: [12, 41] });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Custom Category Icons with ACTUAL Lucide SVG paths for clarity
 const getCategoryIcon = (category) => {
-  const colors = {
-    hospital: '#ef4444',
-    hotel: '#8b5cf6',
-    restaurant: '#f59e0b',
-    police: '#2563eb',
-    temple: '#db2777'
+  const settings = {
+    hospital: { color: '#ef4444', border: '#fee2e2' },
+    hotel: { color: '#824df4', border: '#ede9fe' },
+    restaurant: { color: '#ea580c', border: '#ffedd5' },
+    police: { color: '#2563eb', border: '#dbeafe' },
+    temple: { color: '#db2777', border: '#fce7f3' }
   };
 
   const iconShapes = {
@@ -52,158 +46,121 @@ const getCategoryIcon = (category) => {
     temple: '<path d="m12 2 10 10-10 10L2 12Z"/><path d="m12 22 5-5"/><path d="m12 22-5-5"/><path d="m12 2 5 5"/><path d="m12 2-5 5"/>'
   };
 
+  const s = settings[category] || { color: '#ea580c', border: '#fff7ed' };
+
   return L.divIcon({
     className: 'custom-icon',
-    html: `
-      <div class="marker-wrapper shadow-2xl" style="background:${colors[category] || '#64748b'};">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          ${iconShapes[category] || ''}
-        </svg>
-      </div>
-    `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -20]
+    html: `<div class="marker-container" style="background:${s.color}; border: 3px solid white; box-shadow: 0 12px 30px -5px ${s.color}50;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${iconShapes[category] || ''}</svg></div>`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
+    popupAnchor: [0, -21]
   });
 };
 
 function ChangeView({ center, zoom }) {
   const map = useMap();
-  useEffect(() => {
-    if (center[0] !== 0) map.flyTo(center, zoom, { duration: 1.5 });
-  }, [center, zoom, map]);
+  useEffect(() => { if (center[0] !== 0) map.flyTo(center, zoom, { duration: 1.5 }); }, [center, zoom, map]);
   return null;
 }
 
 const NearbyServices = () => {
-  const [userLocation, setUserLocation] = useState([0, 0]); // Initial empty
+  const [userLocation, setUserLocation] = useState([0, 0]);
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [locationStatus, setLocationStatus] = useState('detecting'); // detecting, granted, denied
-  const [error, setError] = useState(null);
-  const [category, setCategory] = useState('hospital');
-  const [radius, setRadius] = useState(2000);
+  const query = new URLSearchParams(window.location.search);
+  const [category, setCategory] = useState(query.get('category') || 'temple');
+  const [radius, setRadius] = useState(20000);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [mapZoom, setMapZoom] = useState(14);
 
   const categories = useMemo(() => [
-    { id: 'hospital', name: 'Hospitals', icon: <Hospital size={20} />, color: '#ef4444' },
-    { id: 'hotel', name: 'Hotels', icon: <Hotel size={20} />, color: '#8b5cf6' },
-    { id: 'restaurant', name: 'Food', icon: <Utensils size={20} />, color: '#f59e0b' },
-    { id: 'police', name: 'Police', icon: <Shield size={20} />, color: '#2563eb' },
-    { id: 'temple', name: 'Temples', icon: <Milestone size={20} />, color: '#db2777' },
+    { id: 'temple', name: 'Mandir', icon: <Milestone size={24} />, color: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' },
+    { id: 'restaurant', name: 'Food', icon: <Utensils size={24} />, color: 'bg-orange-500', text: 'text-orange-600', bg: 'bg-orange-50' },
+    { id: 'hospital', name: 'Medical', icon: <Hospital size={24} />, color: 'bg-red-500', text: 'text-red-600', bg: 'bg-red-50' },
+    { id: 'police', name: 'Police', icon: <Shield size={24} />, color: 'bg-blue-600', text: 'text-blue-600', bg: 'bg-blue-50' },
+    { id: 'hotel', name: 'Stay', icon: <Tent size={24} />, color: 'bg-purple-600', text: 'text-purple-600', bg: 'bg-purple-50' },
   ], []);
 
-  const radii = [
-    { value: 1000, label: '1km' },
-    { value: 2000, label: '2km' },
-    { value: 5000, label: '5km' },
-    { value: 10000, label: '10km' },
-    { value: 20000, label: '20km' },
-  ];
-
-  const detectLocation = () => {
-    if (navigator.geolocation) {
-      setLocationStatus('detecting');
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLocation([pos.coords.latitude, pos.coords.longitude]);
-          setLocationStatus('granted');
-        },
-        (err) => {
-          console.error(err);
-          setLocationStatus('denied');
-          // Fallback to Ujjain if user denies but we need to show something
-          setUserLocation([23.1765, 75.7885]);
-        },
-        { enableHighAccuracy: true }
-      );
-    } else {
-      setLocationStatus('unsupported');
-    }
-  };
+  const currentCategoryName = categories.find(c => c.id === category)?.name || 'Entities';
 
   useEffect(() => {
-    detectLocation();
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+        () => setUserLocation([23.1765, 75.7885])
+      );
+    }
   }, []);
 
-  useEffect(() => {
-    if (userLocation[0] !== 0) fetchPlaces();
-  }, [category, radius, userLocation]);
+  useEffect(() => { if (userLocation[0] !== 0) fetchPlaces(); }, [category, radius, userLocation]);
 
   const fetchPlaces = async () => {
     setLoading(true);
-    setError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await axios.get(`${apiUrl}/api/v1/nearby`, {
-        params: { category, lat: userLocation[0], lng: userLocation[1], radius }
-      });
+      const response = await axios.get(`${apiUrl}/api/v1/nearby`, { params: { category, lat: userLocation[0], lng: userLocation[1], radius } });
       setPlaces(response.data);
-    } catch (err) {
-      setError("Trouble connecting to satellites. Retrying...");
-    } finally { setLoading(false); }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
   const handleDirections = (p) => window.open(`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`, '_blank');
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-sans text-slate-900 overflow-hidden">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-orange-50 to-red-50 text-slate-800 overflow-hidden relative">
       <Header />
 
-      <div className="flex flex-col lg:flex-row flex-grow h-[calc(100vh-80px)] mt-[80px]">
-
-        {/* SIDEBAR */}
-        <aside className="w-full lg:w-[450px] bg-slate-50 border-r border-slate-200 flex flex-col z-10 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-left-4 duration-500">
-
-          <div className="p-8 bg-white border-b border-slate-200">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-black tracking-tighter text-slate-900 group">
-                Explorer
-                <div className="h-1 w-8 bg-orange-600 rounded-full mt-1 transition-all group-hover:w-full"></div>
-              </h1>
-              <button
-                onClick={detectLocation}
-                className={`p-3 rounded-2xl transition-all ${locationStatus === 'granted' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-orange-50 text-orange-600 border border-orange-100 animate-pulse'}`}
-                title="Refresh Location"
-              >
-                <LocateFixed size={20} />
-              </button>
+      <div className="flex-grow flex h-[calc(100vh-80px)] mt-[80px]">
+        {/* PREMIUM SIDEBAR MATCHING HOME THEME */}
+        <aside className="w-[340px] md:w-[400px] bg-white/90 backdrop-blur-3xl border-r border-orange-100 flex flex-col z-20 shadow-2xl overflow-hidden">
+          <div className="p-8 pb-4">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200 shrink-0 border border-white/20">
+                <Compass className="text-white" size={32} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tighter leading-none text-slate-900 italic uppercase bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Explorer</h1>
+                <p className="text-[10px] font-black text-black uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>
+                  Finding Nearby {currentCategoryName}s
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-8">
-              {/* Category Grid */}
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 block">Select Interest</label>
+            <div className="py-6 space-y-10">
+              <div className="space-y-4">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Universal Search</p>
                 <div className="grid grid-cols-5 gap-3">
                   {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setCategory(cat.id)}
-                      className={`flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all ${category === cat.id
-                          ? `bg-slate-900 border-slate-900 text-white shadow-xl scale-110 z-10`
-                          : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'
-                        }`}
-                      title={cat.name}
-                    >
-                      {cat.icon}
-                    </button>
+                    <div key={cat.id} className="relative group/tip">
+                      <button
+                        onClick={() => setCategory(cat.id)}
+                        className={`w-full aspect-square rounded-2xl flex items-center justify-center transition-all duration-300 relative overflow-hidden ${category === cat.id ? `${cat.color} text-white shadow-xl scale-110 z-10` : 'bg-white text-slate-400 hover:bg-orange-50 hover:shadow-md hover:text-orange-600 border border-orange-100'
+                          }`}
+                      >
+                        {cat.icon}
+                      </button>
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-2xl opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
+                        {cat.name}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Radius Filter */}
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 block">Search Radius</label>
-                <div className="flex p-1.5 bg-slate-100 rounded-[1.25rem] border border-slate-200 shadow-inner overflow-x-auto hide-scrollbar">
-                  {radii.map((r) => (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between ml-1">
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Range Scanner</p>
+                  <span className="text-[12px] font-black text-orange-600 bg-orange-100 px-3 py-1 rounded-full border border-orange-200">{radius >= 1000 ? `${(radius / 1000).toFixed(0)} km` : `${radius} m`}</span>
+                </div>
+                <div className="flex p-1.5 bg-orange-50/50 rounded-2xl border border-orange-100">
+                  {[1000, 2000, 5000, 20000].map((r) => (
                     <button
-                      key={r.value}
-                      onClick={() => setRadius(r.value)}
-                      className={`flex-none px-6 py-2 text-[10px] font-black rounded-xl transition-all uppercase tracking-widest whitespace-nowrap ${radius === r.value ? 'bg-white text-slate-900 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'
+                      key={r}
+                      onClick={() => setRadius(r)}
+                      className={`flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all ${radius === r ? 'bg-white text-orange-600 shadow-lg' : 'text-slate-400 hover:text-orange-600'
                         }`}
                     >
-                      {r.label}
+                      {r >= 10000 ? `${r / 1000}k` : `${r / 1000}km`}
                     </button>
                   ))}
                 </div>
@@ -211,58 +168,46 @@ const NearbyServices = () => {
             </div>
           </div>
 
-          {/* Results List Area */}
-          <div className="flex-grow overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar">
-            {locationStatus === 'detecting' ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
-                <Loader2 className="animate-spin text-orange-600" size={32} />
-                <p className="font-bold text-xs uppercase tracking-widest">Triangulating Location...</p>
-              </div>
-            ) : locationStatus === 'denied' && userLocation[0] === 23.1765 ? (
-              <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-2xl flex items-start gap-4 animate-in bounce-in">
-                <AlertCircle className="text-orange-600 flex-shrink-0" size={20} />
-                <div className="space-y-1">
-                  <p className="text-xs font-black text-orange-900 uppercase">Location Access Denied</p>
-                  <p className="text-[10px] text-orange-700 font-semibold leading-relaxed">Defaulting to Ujjain. Enable browser location for results in your actual area.</p>
-                </div>
-              </div>
-            ) : null}
-
+          {/* LIST AREA */}
+          <div className="flex-grow overflow-y-auto bg-slate-50/30 custom-scrollbar border-t border-orange-100">
             {loading ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-10">
-                <Wifi className="animate-pulse text-slate-300 mb-4" size={48} />
-                <p className="font-bold uppercase tracking-widest text-[10px]">Pinging Nearby Sites...</p>
+              <div className="flex flex-col items-center justify-center h-full py-20 opacity-60">
+                <Loader2 className="animate-spin text-orange-600 mb-4" size={48} />
+                <span className="text-[11px] font-black tracking-[0.3em] uppercase text-orange-900/50">Broadcasting...</span>
               </div>
             ) : places.length === 0 ? (
-              <div className="text-center py-24 text-slate-400 italic">
-                <MapIcon size={64} className="mx-auto mb-6 opacity-5" />
-                <p className="font-bold text-sm">Territory Unexplored</p>
-                <p className="text-[10px] uppercase font-bold tracking-widest mt-2">No {category}s found within {radius / 1000}km</p>
+              <div className="text-center py-24 opacity-20">
+                <MapPin size={72} className="mx-auto mb-4 text-orange-200" />
+                <p className="text-xs uppercase font-black tracking-widest text-orange-400">Horizon Empty</p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="p-8 space-y-8">
+                <p className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center justify-between">
+                  Latest Discoveries <span>{places.length} found</span>
+                </p>
                 {places.map((place, idx) => (
                   <div
                     key={idx}
                     onClick={() => { setSelectedPlace(place); setMapZoom(17); }}
-                    className={`p-6 rounded-[2rem] border transition-all duration-300 cursor-pointer ${selectedPlace?.name === place.name
-                        ? 'bg-white border-slate-900 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5'
-                        : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-lg group'
+                    className={`group relative p-6 rounded-[2rem] border transition-all duration-300 cursor-pointer ${selectedPlace?.name === place.name ? 'bg-white border-orange-200 scale-[1.02] shadow-[0_30px_60px_-15px_rgba(234,88,12,0.15)] z-10' : 'bg-transparent border-transparent hover:bg-white hover:shadow-xl hover:shadow-orange-200/20'
                       }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-black text-lg tracking-tighter leading-none flex-1 pr-4 truncate text-slate-900 group-hover:text-orange-600 transition-colors uppercase italic">{place.name}</h3>
-                      <span className="text-[11px] font-black text-white bg-slate-900 px-3 py-1 rounded-full shadow-lg">
-                        {place.distance >= 1000 ? `${(place.distance / 1000).toFixed(1)}km` : `${Math.round(place.distance)}m`}
-                      </span>
+                    <div className="flex justify-between items-start relative z-10">
+                      <div className="min-w-0 pr-4">
+                        <h3 className={`font-black text-[15px] leading-tight uppercase tracking-tight truncate mb-2 ${selectedPlace?.name === place.name ? 'text-orange-600' : 'text-slate-800'}`}>{place.name}</h3>
+                        <p className={`text-[11px] font-bold line-clamp-1 mb-5 leading-none text-slate-400`}>{place.address}</p>
+                      </div>
+                      <div className={`px-4 py-2 rounded-[14px] text-[11px] font-black uppercase tracking-tight shrink-0 flex items-center gap-1 ${selectedPlace?.name === place.name ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-xl' : 'bg-orange-100 text-orange-600'}`}>
+                        {place.distance >= 1000 ? `${(place.distance / 1000).toFixed(1)} km` : `${Math.round(place.distance)} m`}
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-400 mb-5 leading-normal font-bold lowercase tracking-tight italic opacity-80">{place.address}</p>
+
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDirections(place); }}
-                      className="w-full bg-slate-100 hover:bg-orange-600 hover:text-white text-slate-900 h-14 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 shadow-sm"
+                      className={`w-full h-12 rounded-[1.25rem] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all relative z-10 shadow-sm ${selectedPlace?.name === place.name ? 'bg-slate-900 text-white hover:bg-orange-600' : 'bg-white border border-orange-100 text-slate-500 hover:text-orange-600 hover:border-orange-600'
+                        }`}
                     >
-                      <Navigation size={18} className="fill-current" />
-                      Dispatch Guide
+                      Route Map <Navigation size={16} fill="currentColor" />
                     </button>
                   </div>
                 ))}
@@ -271,110 +216,59 @@ const NearbyServices = () => {
           </div>
         </aside>
 
-        {/* MAP CANVAS PANEL */}
-        <main className="flex-grow relative z-0">
-          {userLocation[0] !== 0 ? (
-            <MapContainer
-              center={userLocation}
-              zoom={mapZoom}
-              zoomControl={false}
-              style={{ height: '100%', width: '100%' }}
-              className="focus:outline-none"
-            >
-              <ChangeView center={selectedPlace ? [selectedPlace.lat, selectedPlace.lng] : userLocation} zoom={mapZoom} />
+        {/* FULLSCREEN LIGHT MAP */}
+        <main className="flex-grow relative z-10">
+          <MapContainer
+            center={userLocation[0] !== 0 ? userLocation : [23.1765, 75.7885]}
+            zoom={mapZoom}
+            zoomControl={false}
+            style={{ height: '100%', width: '100%' }}
+          >
+            <ChangeView center={selectedPlace ? [selectedPlace.lat, selectedPlace.lng] : userLocation[0] !== 0 ? userLocation : [23.1765, 75.7885]} zoom={mapZoom} />
+            <TileLayer
+              attribution='&copy; CARTO'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
 
-              <TileLayer
-                attribution='&copy; CARTO'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              />
+            <ZoomControl position="bottomright" />
 
-              <ZoomControl position="bottomright" />
+            {userLocation[0] !== 0 && (
+              <Marker position={userLocation} icon={L.divIcon({ className: 'user-marker', html: `<div class="pulse"></div><div class="dot shadow-2xl"></div>`, iconSize: [44, 44] })}>
+                <Popup>Your Source</Popup>
+              </Marker>
+            )}
 
-              {/* LIVE USER PULSE */}
-              <Marker
-                position={userLocation}
-                icon={L.divIcon({
-                  className: 'user-marker',
-                  html: `<div class="user-pulse shadow-2xl"></div><div class="user-center border-4 border-white transition-all"></div>`,
-                  iconSize: [24, 24]
-                })}
-              >
-                <Popup className="premium-popup-light">
-                  <div className="p-3 text-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Nexus</span>
-                    <p className="font-bold text-xs mt-1">Your Live Position</p>
+            {places.map((place, idx) => (
+              <Marker key={idx} position={[place.lat, place.lng]} icon={getCategoryIcon(place.category)} eventHandlers={{ click: () => setSelectedPlace(place) }}>
+                <Popup className="home-theme-popup">
+                  <div className="p-8 text-slate-800 min-w-[300px]">
+                    <div className="flex items-center gap-5 mb-6">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl ${categories.find(c => c.id === place.category)?.color}`}>
+                        {categories.find(c => c.id === place.category)?.icon}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[11px] text-slate-400 mb-2 leading-none">{place.category}</p>
+                        <h4 className="font-black text-xl uppercase italic tracking-tighter leading-none">{place.name}</h4>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 mb-8 text-slate-500">
+                      <MapPin size={16} className="mt-0.5 shrink-0 text-orange-600" />
+                      <p className="text-[13px] font-bold leading-tight">{place.address}</p>
+                    </div>
+                    <button onClick={() => handleDirections(place)} className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white text-[12px] py-5 rounded-[1.25rem] font-black uppercase tracking-[0.2em] hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3">Initiate Nav <ChevronRight size={18} /></button>
                   </div>
                 </Popup>
               </Marker>
+            ))}
+          </MapContainer>
 
-              {/* SERVICE NODES */}
-              {places.map((place, idx) => (
-                <Marker
-                  key={idx}
-                  position={[place.lat, place.lng]}
-                  icon={getCategoryIcon(place.category)}
-                  eventHandlers={{ click: () => setSelectedPlace(place) }}
-                >
-                  <Popup className="premium-popup-light">
-                    <div className="p-5 text-slate-900 min-w-[280px]">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ background: categories.find(c => c.id === place.category)?.color }}>
-                          {categories.find(c => c.id === place.category)?.icon}
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Validated Entity</span>
-                      </div>
-                      <h4 className="font-black text-xl mb-1 tracking-tighter italic uppercase">{place.name}</h4>
-                      <p className="text-[11px] text-slate-500 mb-6 font-bold leading-relaxed">{place.address}</p>
-                      <button
-                        onClick={() => handleDirections(place)}
-                        className="w-full bg-slate-900 text-white text-[10px] py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-600 transition-all shadow-2xl active:scale-95"
-                      >
-                        Launch Navigation
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          ) : (
-            <div className="w-full h-full bg-slate-100 flex items-center justify-center flex-col space-y-6">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl animate-bounce">
-                <LocateFixed size={40} className="text-orange-500" />
-              </div>
-              <div className="text-center">
-                <h3 className="font-black text-xl uppercase tracking-widest">Waiting for Signal...</h3>
-                <p className="text-slate-400 text-xs mt-2 font-bold">Please allow location access to continue</p>
-              </div>
-            </div>
-          )}
-
-          {/* MAP LEGEND - FIXED UI CLARITY */}
-          <div className="absolute top-6 left-6 z-[500] pointer-events-none">
-            <div className="bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] border border-slate-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] pointer-events-auto">
-              <div className="flex items-center gap-2 mb-4">
-                <HelpCircle size={16} className="text-slate-400" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Entity Legend</span>
-              </div>
-              <div className="space-y-3">
-                {categories.map(cat => (
-                  <div key={cat.id} className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md transform transition-transform hover:scale-110" style={{ background: cat.color }}>
-                      {cat.icon}
-                    </div>
-                    <span className="text-[11px] font-black uppercase tracking-tight text-slate-600">{cat.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* RE-CENTER MAP CONTROL */}
-          <div className="absolute bottom-10 right-10 z-[500]">
-            <button
-              onClick={() => { setSelectedPlace(null); detectLocation(); setMapZoom(14); }}
-              className="w-16 h-16 bg-white border border-slate-100 rounded-3xl shadow-2xl flex items-center justify-center text-orange-600 hover:text-white hover:bg-orange-600 transition-all active:scale-90"
-            >
-              <LocateFixed size={32} />
+          {/* FLOATING ACTION CLUSTER */}
+          <div className="absolute top-8 right-8 z-[1000] flex flex-col gap-4">
+            <button onClick={() => { setSelectedPlace(null); setMapZoom(14); }} className="w-18 h-18 bg-white text-orange-600 rounded-[2rem] shadow-2xl flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all active:scale-90 group border border-orange-100 p-4">
+              <LocateFixed size={32} className="group-hover:scale-110 transition-transform" />
+            </button>
+            <button onClick={() => navigate('/')} className="w-18 h-18 bg-slate-900 text-white rounded-[2rem] shadow-2xl flex items-center justify-center hover:bg-orange-600 transition-all active:scale-90 border-4 border-white p-4">
+              <LayoutGrid size={32} />
             </button>
           </div>
         </main>
@@ -382,67 +276,28 @@ const NearbyServices = () => {
 
       <style dangerouslySetInnerHTML={{
         __html: `
-        @keyframes ping {
-          75%, 100% { transform: scale(3.5); opacity: 0; }
-        }
-        .user-pulse {
-          position: absolute;
-          width: 48px;
-          height: 48px;
-          background: rgba(249, 115, 22, 0.2);
-          border-radius: 50%;
-          animation: user-ping 3s infinite;
-          top: 50%; left: 50%; transform: translate(-50%, -50%);
-        }
-        .user-center {
-          position: absolute;
-          width: 14px;
-          height: 14px;
-          background: #f97316;
-          border-radius: 50%;
-          top: 50%; left: 50%; transform: translate(-50%, -50%);
-          z-index: 5;
-        }
-        @keyframes user-ping {
-          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
-          100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-        }
-        .marker-wrapper {
-          width: 40px; height: 40px;
+        .marker-container {
+          width: 42px; height: 42px;
           border-radius: 12px;
           display: flex; align-items: center; justify-content: center;
-          border: 3px solid white;
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .marker-wrapper:hover {
-          transform: scale(1.2) rotate(10deg);
-          z-index: 1000;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(0,0,0,0.05);
-          border-radius: 10px;
-        }
-        .premium-popup-light .leaflet-popup-content-wrapper {
-          border-radius: 2.5rem;
-          padding: 0;
-          overflow: hidden;
-          background: white;
-          box-shadow: 0 40px 80px -20px rgba(0,0,0,0.25);
-        }
-        .premium-popup-light .leaflet-popup-content {
-          margin: 0;
-        }
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .leaflet-container {
-          background: #f8fafc;
-        }
+        .marker-container:hover { transform: scale(1.1) translateY(-5px); z-index: 1000; }
+        
+        .user-marker { display: flex; align-items: center; justify-content: center; position: relative; }
+        .user-marker .dot { width: 16px; height: 16px; background: #6366f1; border: 4px solid white; border-radius: 50%; z-index: 2; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+        .user-marker .pulse { width: 50px; height: 50px; background: rgba(99, 102, 241, 0.2); border-radius: 50%; position: absolute; animation: user-pulse 3s infinite; }
+        @keyframes user-pulse { 0% { scale: 0.5; opacity: 1; } 100% { scale: 2.5; opacity: 0; } }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #ffedd5; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #fed7aa; }
+
+        .home-theme-popup .leaflet-popup-content-wrapper { border-radius: 3rem; padding: 0; overflow: hidden; background: white; border: 1px solid #ffedd5; box-shadow: 0 50px 100px -20px rgba(234, 88, 12, 0.2); }
+        .home-theme-popup .leaflet-popup-content { margin: 0; }
+        .home-theme-popup .leaflet-popup-tip { background: white; }
+        .leaflet-container { background: #fff7ed; font-family: inherit; }
       `}} />
-      <Footer />
     </div>
   );
 };

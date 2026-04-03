@@ -1,9 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Compass, User, LogOut, MapPin, ChevronDown, CreditCard } from "lucide-react";
+import { Menu, X, Compass, User, LogOut, MapPin, ChevronDown, Globe, CreditCard } from "lucide-react";
 import GuidePage from "../pages/guide";
-
 import logo from "../assets/logo.png";
+
+const LANGUAGES = [
+    { code: "en", label: "English", flag: "🇬🇧" },
+    { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
+    { code: "mr", label: "मराठी", flag: "🇮🇳" },
+    { code: "gu", label: "ગુજરાતી", flag: "🇮🇳" },
+    { code: "ta", label: "தமிழ்", flag: "🇮🇳" },
+    { code: "te", label: "తెలుగు", flag: "🇮🇳" },
+    { code: "bn", label: "বাংলা", flag: "🇮🇳" },
+    { code: "kn", label: "ಕನ್ನಡ", flag: "🇮🇳" },
+    { code: "ml", label: "മലയാളം", flag: "🇮🇳" },
+    { code: "pa", label: "ਪੰਜਾਬੀ", flag: "🇮🇳" },
+    { code: "ur", label: "اردو", flag: "🇮🇳" },
+    { code: "or", label: "ଓଡ଼ିଆ", flag: "🇮🇳" },
+];
 
 const Header = () => {
     const navigate = useNavigate();
@@ -13,15 +27,113 @@ const Header = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isLangOpen, setIsLangOpen] = useState(false);
+    const [activeLang, setActiveLang] = useState(LANGUAGES[0]);
     const guideRef = useRef(null);
+    const langRef = useRef(null);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
         const savedUser = localStorage.getItem("user");
-        if (savedUser) {
-            setUser(JSON.parse(savedUser));
+        if (savedUser) setUser(JSON.parse(savedUser));
+        // Detect current language from cookie
+        const match = document.cookie.match(/googtrans=\/en\/([a-z]{2,})/);
+        if (match) {
+            const found = LANGUAGES.find(l => l.code === match[1]);
+            if (found) setActiveLang(found);
         }
     }, []);
+
+    // Close lang dropdown on outside click
+    useEffect(() => {
+        const handler = (e) => { if (langRef.current && !langRef.current.contains(e.target)) setIsLangOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    // Hide Google Translate banner iframe but allow natural body offset
+    useEffect(() => {
+        const killBanner = () => {
+            const banner = document.querySelector('.goog-te-banner-frame');
+            if (banner) banner.style.display = 'none';
+            // Do NOT reset body.style.top — let Google shift page naturally
+        };
+        killBanner();
+        const observer = new MutationObserver(killBanner);
+        observer.observe(document.body, { childList: true, subtree: true });
+        return () => observer.disconnect();
+    }, []);
+
+    // Track header top position based on Google Translate offset
+    const [headerTop, setHeaderTop] = useState(0);
+    useEffect(() => {
+        const update = () => {
+            const raw = document.body.style.top || '0px';
+            const val = parseInt(raw, 10);
+            setHeaderTop(isNaN(val) || val < 0 ? 0 : val);
+        };
+        update();
+        const obs = new MutationObserver(update);
+        obs.observe(document.body, { attributes: true, attributeFilter: ['style'] });
+        return () => obs.disconnect();
+    }, []);
+
+    // Load Google Translate script (hidden) so cookie translation works
+    useEffect(() => {
+        window.googleTranslateElementInit = () => {
+            if (window.google && window.google.translate) {
+                new window.google.translate.TranslateElement(
+                    { pageLanguage: 'en', includedLanguages: 'en,hi,mr,gu,ta,te,bn,kn,ml,pa,ur,or', autoDisplay: false },
+                    'google_translate_element_hidden'
+                );
+            }
+        };
+        if (!document.getElementById('google-translate-script')) {
+            const s = document.createElement('script');
+            s.id = 'google-translate-script';
+            s.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+            s.async = true;
+            document.body.appendChild(s);
+        } else if (window.googleTranslateElementInit) {
+            setTimeout(window.googleTranslateElementInit, 300);
+        }
+    }, []);
+
+    const changeLanguage = (lang) => {
+        setActiveLang(lang);
+        setIsLangOpen(false);
+
+        // 1. Update cookie for persistence across pages
+        if (lang.code === "en") {
+            document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+            document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + location.hostname;
+        } else {
+            document.cookie = `googtrans=/en/${lang.code}; path=/`;
+            document.cookie = `googtrans=/en/${lang.code}; path=/; domain=` + window.location.hostname;
+        }
+
+        // 2. Perform INSTANT DOM translation (zero-reload)
+        const gtCombo = document.querySelector('.goog-te-combo');
+        if (gtCombo) {
+            gtCombo.value = lang.code; // Set hidden select to language code
+            gtCombo.dispatchEvent(new Event('change')); // Trigger Google's engine instantly
+
+            // Failsafe for restoring native English DOM structure efficiently
+            if (lang.code === "en") {
+                const iframe = document.querySelector('.goog-te-banner-frame');
+                if (iframe) {
+                    const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const restoreBtn = innerDoc.getElementById('goog-te-button2');
+                    if (restoreBtn) restoreBtn.click();
+                } else {
+                    setTimeout(() => window.location.reload(), 100);
+                }
+            }
+        } else {
+            // Fallback if engine hasn't fully started
+            window.location.reload();
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -83,10 +195,10 @@ const Header = () => {
         { name: "Home", target: "/" },
         { name: "Services", target: "services" },
 
-        { name: "Parking", target: "/parking" },
-        { name: "AI Planner", target: "/chatbot" },
-        // { name: "Simulation", target: "/crowd-simulation" },
-        { name: "Map", target: "/map" },
+        // { name: "Parking", target: "/parking" },
+        // { name: "AI Planner", target: "/chatbot" },
+        // // { name: "Simulation", target: "/crowd-simulation" },
+        // { name: "Map", target: "/map" },
         { name: "Contact", target: "contact" },
     ];
 
@@ -96,11 +208,19 @@ const Header = () => {
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .hide-scrollbar::-webkit-scrollbar { display: none; }
-                body { overflow-x: hidden; width: 100%; position: relative; }
+                body { overflow-x: hidden; width: 100%; }
+                #google_translate_element_hidden { display: none !important; }
+                .goog-te-banner-frame { display: none !important; }
+                .goog-te-balloon-frame { display: none !important; }
+                font { background-color: transparent !important; box-shadow: none !important; }
             `}} />
 
+            {/* Hidden GT engine mount — do NOT remove */}
+            <div id="google_translate_element_hidden" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} />
+
             <header
-                className={`fixed top-0 left-0 w-full z-50 bg-white border-b border-gray-100 transition-all duration-300 ${isScrolled
+                style={{ top: `${headerTop}px` }}
+                className={`fixed left-0 w-full z-50 bg-white border-b border-gray-100 transition-all duration-300 ${isScrolled
                     ? "py-2 shadow-md"
                     : "py-3 shadow-sm"
                     }`}
@@ -149,6 +269,8 @@ const Header = () => {
 
                     {/* Right Side: Identity Box & Action */}
                     <div className="flex items-center gap-1.5 sm:gap-6 flex-shrink-0">
+
+
 
                         {/* Profile Dropdown */}
                         <div className="relative group/profile">
@@ -232,13 +354,44 @@ const Header = () => {
                             </div>
                         </div>
 
-                        {/* Desktop Action Button */}
-                        <button
-                            onClick={() => handleNavigation("/ticket")}
-                            className="hidden xl:flex bg-slate-900 hover:bg-orange-600 text-white px-8 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95"
-                        >
-                            Book Tickets
-                        </button>
+                        {/* Custom Language Selector */}
+                        <div ref={langRef} className="relative hidden xl:block">
+                            <button
+                                onClick={() => setIsLangOpen(!isLangOpen)}
+                                className="flex items-center gap-2 bg-white border border-gray-100 hover:border-orange-300 px-3 py-2 rounded-xl shadow-sm transition-all hover:shadow-md active:scale-95 group"
+                            >
+                                <Globe size={14} className="text-orange-500" />
+                                <span className="text-base">{activeLang.flag}</span>
+                                <span className="text-xs font-bold text-slate-700 max-w-[60px] truncate">{activeLang.label}</span>
+                                <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Dropdown Panel */}
+                            <div className={`absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[200] transition-all duration-200 ${isLangOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'
+                                }`}>
+                                <div className="px-3 py-2 bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-orange-500">🌐 Select Language</p>
+                                </div>
+                                <div className="py-1.5 max-h-[300px] overflow-y-auto">
+                                    {LANGUAGES.map((lang) => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => changeLanguage(lang)}
+                                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:bg-orange-50 ${activeLang.code === lang.code
+                                                ? 'bg-orange-50 text-orange-600'
+                                                : 'text-slate-700'
+                                                }`}
+                                        >
+                                            <span className="text-lg">{lang.flag}</span>
+                                            <span className="text-sm font-semibold">{lang.label}</span>
+                                            {activeLang.code === lang.code && (
+                                                <span className="ml-auto text-[10px] font-black text-orange-500 uppercase tracking-wider">Active</span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Mobile Hamburger (Only visible below XL) */}
                         <button

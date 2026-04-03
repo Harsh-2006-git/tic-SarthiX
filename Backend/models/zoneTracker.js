@@ -12,7 +12,8 @@ const ZoneTracker = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    client_id: { type: DataTypes.INTEGER, allowNull: false },
+    client_id: { type: DataTypes.INTEGER, allowNull: true },
+    member_id: { type: DataTypes.INTEGER, allowNull: true },
     last_zone_id: { type: DataTypes.INTEGER, allowNull: true },
     current_zone_id: { type: DataTypes.INTEGER, allowNull: true },
     scanned_at: {
@@ -20,6 +21,8 @@ const ZoneTracker = sequelize.define(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    latitude: { type: DataTypes.DOUBLE, allowNull: true },
+    longitude: { type: DataTypes.DOUBLE, allowNull: true },
   },
   {
     tableName: "zone_trackers",
@@ -30,7 +33,11 @@ const ZoneTracker = sequelize.define(
 );
 
 // Associations with proper aliases
+import FamilyMember from "./familyMember.js";
+
+// models/zoneTracker.js (cont.)
 ZoneTracker.belongsTo(Client, { foreignKey: "client_id", as: "client" });
+ZoneTracker.belongsTo(FamilyMember, { foreignKey: "member_id", as: "familyMember" });
 ZoneTracker.belongsTo(Zone, {
   foreignKey: "current_zone_id",
   as: "currentZone",

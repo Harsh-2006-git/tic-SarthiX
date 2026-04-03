@@ -7,13 +7,13 @@ const clearTables = async () => {
     await sequelize.authenticate();
     console.log("Database connected.");
 
-    // Delete children first
+    // Clear history
     await ZoneTracker.destroy({ where: {} });
+    console.log("🗑️ History cleared.");
 
-    // Then delete parent
-    await Zone.destroy({ where: {} });
-
-    console.log("✅ All rows deleted.");
+    // Reset counts
+    await Zone.update({ client_count: 0 }, { where: {} });
+    console.log("✅ Pilgrim counts reset.");
     process.exit(0);
   } catch (error) {
     console.error("❌ Error deleting rows:", error);

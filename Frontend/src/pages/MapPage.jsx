@@ -6,9 +6,6 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MapPin, Compass, Search, LocateFixed, Layers, Info, Sparkles, TrendingUp, Anchor, Trash2 } from 'lucide-react';
-import L from 'leaflet';
-import 'leaflet-routing-machine';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
 // Full Temple Data from HTML
 const temples = [
@@ -127,7 +124,9 @@ const MapPage = () => {
     const [routeSummary, setRouteSummary] = useState(null);
     const [densityVisible, setDensityVisible] = useState(false);
     const densityOverlaysRef = useRef([]);
-    const [searchInput, setSearchInput] = useState("");
+    const [startInput, setStartInput] = useState("");
+    const [destInput, setDestInput] = useState("");
+    const [destLocation, setDestLocation] = useState(null);
 
     useEffect(() => {
         const initialCenter = [23.1765, 75.7849];
@@ -196,7 +195,28 @@ const MapPage = () => {
         window.userMarker.bindPopup(`<div class="font-black text-[9px] uppercase tracking-widest text-orange-600">Start:</div><div class="text-[11px] font-bold">${name}</div>`).openPopup();
         mapInstance.current.setView([lat, lng], 14);
         setUserLocation({ lat, lng, name });
+        setStartInput(name);
         setStatusMessage(`Starting from: ${name}`);
+        setRouteSummary(null);
+    };
+
+    const setDestPosition = (lat, lng, name) => {
+        if (!mapInstance.current) return;
+
+        if (window.destMarker) mapInstance.current.removeLayer(window.destMarker);
+
+        const destIcon = L.icon({
+            iconUrl: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMwZmE0ZDYiIHN0cm9rZT0iIzAyOGRhZCIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+        });
+
+        window.destMarker = L.marker([lat, lng], { icon: destIcon, zIndexOffset: 1000 }).addTo(mapInstance.current);
+        window.destMarker.bindPopup(`<div class="font-black text-[9px] uppercase tracking-widest text-blue-600">Destination:</div><div class="text-[11px] font-bold">${name}</div>`).openPopup();
+        mapInstance.current.setView([lat, lng], 14);
+        setDestLocation({ lat, lng, name });
+        setDestInput(name);
+        setStatusMessage(`Destination set: ${name}`);
         setRouteSummary(null);
     };
 
@@ -216,17 +236,24 @@ const MapPage = () => {
         const currentPos = userLocation || { lat: window.userMarker.getLatLng().lat, lng: window.userMarker.getLatLng().lng };
         const temple = temples[index];
 
+        calculateRoute(currentPos, temple);
+    };
+
+    const showCustomRoute = () => {
+        if (!userLocation || !destLocation) {
+            setStatusMessage("⚠️ Please set both start and destination points.");
+            return;
+        }
+        calculateRoute(userLocation, destLocation);
+    };
+
+    const calculateRoute = (start, end) => {
         if (routingControlRef.current) {
             mapInstance.current.removeControl(routingControlRef.current);
         }
 
-        if (!L.Routing || !L.Routing.control) {
-            setStatusMessage("⚠️ Routing service is unavailable. Please refresh the page.");
-            return;
-        }
-
         routingControlRef.current = L.Routing.control({
-            waypoints: [L.latLng(currentPos.lat, currentPos.lng), L.latLng(temple.lat, temple.lng)],
+            waypoints: [L.latLng(start.lat, start.lng), L.latLng(end.lat, end.lng)],
             lineOptions: { styles: [{ color: '#f97316', opacity: 0.9, weight: 6 }] },
             fitSelectedRoutes: true,
             show: true,
@@ -238,11 +265,11 @@ const MapPage = () => {
             setRouteSummary({
                 distance: (summary.totalDistance / 1000).toFixed(1),
                 time: Math.round(summary.totalTime / 60),
-                temple: temple
+                temple: end.name ? end : { name: "Custom Destination", density: "N/A" }
             });
         }).addTo(mapInstance.current);
 
-        setStatusMessage(`🕊 Divine path to ${temple.name} calculated.`);
+        setStatusMessage(`🕊 Journey path calculated.`);
         document.getElementById('main-map-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
@@ -255,14 +282,19 @@ const MapPage = () => {
         });
     };
 
-    const handleSearch = async () => {
-        if (!searchInput) return;
-        setStatusMessage("Searching...");
+    const handleSearch = async (type) => {
+        const query = type === 'start' ? startInput : destInput;
+        if (!query) return;
+        setStatusMessage(`Searching for ${type}...`);
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchInput)}`);
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data.length > 0) {
-                setManualPosition(parseFloat(data[0].lat), parseFloat(data[0].lon), data[0].display_name);
+                if (type === 'start') {
+                    setManualPosition(parseFloat(data[0].lat), parseFloat(data[0].lon), data[0].display_name);
+                } else {
+                    setDestPosition(parseFloat(data[0].lat), parseFloat(data[0].lon), data[0].display_name);
+                }
             } else {
                 setStatusMessage("Location not found.");
             }
@@ -336,33 +368,69 @@ const MapPage = () => {
 
             {/* LOCATION SELECTOR TOP (GPS & Search) */}
             <div id="location-intelligence" className="w-full max-w-[1400px] mx-auto px-4 md:px-12 lg:px-24 pt-8 pb-4">
-                <div className="bg-white p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-lg border border-gray-100 flex flex-col md:flex-row gap-4 md:gap-8 items-center justify-center">
+                <div className="bg-white p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-lg border border-gray-100 flex flex-col gap-6 items-center justify-center">
 
-                    {/* GPS Detect */}
-                    <button onClick={detectLocation} className="w-full md:w-auto flex items-center gap-4 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-orange-600 transition-all active:scale-95 shadow-xl">
-                        Identify My Location
-                        <LocateFixed size={16} />
-                    </button>
-
-                    <div className="h-px w-full md:h-10 md:w-px bg-slate-100"></div>
-
-                    {/* Search Field */}
-                    <div className="w-full max-w-md flex flex-col md:flex-row gap-2">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                type="text"
-                                placeholder="Enter your starting point..."
-                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-orange-500 focus:bg-white transition-all font-bold text-xs outline-none"
-                            />
+                    <div className="flex flex-col lg:flex-row w-full gap-6 items-center lg:items-end">
+                        {/* Start Point */}
+                        <div className="w-full lg:flex-1 space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-4">Starting Point</label>
+                            <div className="relative flex flex-col md:flex-row gap-2">
+                                <div className="relative flex-1">
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400" size={18} />
+                                    <input
+                                        value={startInput}
+                                        onChange={(e) => setStartInput(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSearch('start')}
+                                        type="text"
+                                        placeholder="Where are you now?"
+                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-orange-500 focus:bg-white transition-all font-bold text-xs outline-none"
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleSearch('start')} className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg">
+                                        Set Start
+                                    </button>
+                                    <button onClick={detectLocation} className="p-4 bg-orange-50 text-orange-600 border border-orange-100 rounded-2xl hover:bg-orange-100 transition-all active:scale-95 shadow-sm shrink-0">
+                                        <LocateFixed size={20} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <button onClick={handleSearch} className="px-8 py-4 bg-orange-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg hover:shadow-orange-500/20">
-                            Search
-                        </button>
+
+                        <div className="hidden lg:block h-12 w-px bg-slate-200 self-end mb-4"></div>
+
+                        {/* Destination */}
+                        <div className="w-full lg:flex-1 space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-4">Destination</label>
+                            <div className="relative flex flex-col md:flex-row gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={18} />
+                                    <input
+                                        value={destInput}
+                                        onChange={(e) => setDestInput(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSearch('dest')}
+                                        type="text"
+                                        placeholder="Where do you want to go?"
+                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white transition-all font-bold text-xs outline-none"
+                                    />
+                                </div>
+                                <button onClick={() => handleSearch('dest')} className="px-6 py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg hover:shadow-blue-500/20">
+                                    Set Destination
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
+                    <div className="w-full h-px bg-slate-100"></div>
+
+                    <button
+                        onClick={showCustomRoute}
+                        disabled={!userLocation || !destLocation}
+                        className={`w-full max-w-sm flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-xl active:scale-95 ${(!userLocation || !destLocation) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-orange-500/30'}`}
+                    >
+                        Visualize custom journey
+                        <Sparkles size={16} />
+                    </button>
 
                 </div>
             </div>

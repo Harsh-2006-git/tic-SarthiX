@@ -140,15 +140,9 @@ Return ONLY this JSON structure (no markdown, no backticks):
 
     // Use direct Google AI SDK for reliable JSON output
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel(
-      {
-        model: "gemini-1.5-flash-latest",
-        generationConfig: {
-          responseMimeType: "application/json",
-        },
-      },
-      { apiVersion: "v1" }
-    );
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash-latest",
+    });
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();

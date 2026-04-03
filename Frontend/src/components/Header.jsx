@@ -194,11 +194,7 @@ const Header = () => {
     const navItems = [
         { name: "Home", target: "/" },
         { name: "Services", target: "services" },
-
-        // { name: "Parking", target: "/parking" },
-        // { name: "AI Planner", target: "/chatbot" },
-        // // { name: "Simulation", target: "/crowd-simulation" },
-        // { name: "Map", target: "/map" },
+        { name: "Parking", target: "/parking" },
         { name: "Contact", target: "contact" },
     ];
 

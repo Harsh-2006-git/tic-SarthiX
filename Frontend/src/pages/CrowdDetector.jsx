@@ -139,8 +139,8 @@ const CrowdDetector = () => {
                             Live Crowd Analytics
                         </h1>
                         <p className="text-sm md:text-base text-gray-600 max-w-xl mx-auto md:mx-0">
-                            Real-time devotee flow monitoring using advanced Face Detection AI.
-                            Select your input source to begin sacred monitoring.
+                            Real-time devotee flow monitoring using advanced <strong>Full Body Detection AI (YOLOv8)</strong>.
+                            Detects people even when face is covered — by analysing full body silhouette.
                         </p>
                     </div>
 
@@ -235,8 +235,9 @@ const CrowdDetector = () => {
                                 )}
                             </div>
                             <div className="text-right">
-                                <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">Total Faces Detected</span>
+                                <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">Total People Detected</span>
                                 <h4 className="text-3xl font-black text-orange-600">{zones.total || 0}</h4>
+                                <span className="text-[10px] text-gray-400 font-bold">{status.detection_mode || 'Initializing...'}</span>
                             </div>
                         </div>
                     </div>
@@ -285,16 +286,24 @@ const CrowdDetector = () => {
                             </h3>
                             <ul className="space-y-3">
                                 <li className="flex items-center gap-3 text-xs text-gray-600">
-                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                    Model: OpenCV Haar Cascade
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                    Model: YOLOv8s (Full Body)
                                 </li>
                                 <li className="flex items-center gap-3 text-xs text-gray-600">
                                     <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                    Target: Sacred Face Detection
+                                    Target: Person Detection (class 0)
                                 </li>
                                 <li className="flex items-center gap-3 text-xs text-gray-600">
                                     <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                    Resolution: High-Speed Stream
+                                    Detects face-covered individuals ✓
+                                </li>
+                                <li className="flex items-center gap-3 text-xs text-gray-600">
+                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                    Fallback: HOG Body Detector (if YOLO unavailable)
+                                </li>
+                                <li className="flex items-center gap-3 text-xs text-gray-600">
+                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                    Resolution: High-Speed 30fps Stream
                                 </li>
                             </ul>
                         </div>

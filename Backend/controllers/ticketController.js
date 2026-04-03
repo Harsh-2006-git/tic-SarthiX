@@ -59,6 +59,7 @@ export const getTicketsByClient = async (req, res) => {
         "time",
         "temple",
         "no_of_tickets",
+        "category",
         "qr_code", // 👈 explicitly include QR code
         "created_at",
       ],

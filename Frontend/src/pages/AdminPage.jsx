@@ -1,486 +1,905 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-    Users,
-    Activity,
-    Package,
-    Ticket,
-    Monitor,
-    Settings,
-    BarChart3,
-    ArrowUpRight,
-    Search,
-    CheckCircle2,
-    Clock,
-    AlertCircle,
-    MoreVertical,
-    ChevronRight,
-    ShieldCheck,
-    Zap,
-    LayoutDashboard
+    Users, Activity, Package, Ticket, Monitor, BarChart3, Search,
+    CheckCircle2, AlertCircle, MoreVertical, ChevronRight, ShieldCheck,
+    Zap, LayoutDashboard, Bell, BellRing, Send, Trash2, ToggleLeft, ToggleRight,
+    TrendingUp, PieChart, RefreshCw, Eye, EyeOff, X, AlertTriangle, Info,
+    Calendar, Clock, UserCheck, Crown, Shield
 } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+const BACKEND_URL = 'http://localhost:3001/api/v1/admin';
+
+// ==================== MINI BAR CHART COMPONENT ====================
+const MiniBarChart = ({ data, label, color = '#f97316' }) => {
+    const max = Math.max(...data.map(d => d.value), 1);
+    return (
+        <div className="space-y-3">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+            <div className="flex items-end gap-1.5 h-32">
+                {data.map((d, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                        <span className="text-[8px] font-black text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {d.value}
+                        </span>
+                        <div
+                            className="w-full rounded-t-lg transition-all duration-700 hover:opacity-80 cursor-pointer relative"
+                            style={{
+                                height: `${Math.max((d.value / max) * 100, 4)}%`,
+                                background: `linear-gradient(to top, ${color}, ${color}99)`,
+                                animationDelay: `${i * 100}ms`
+                            }}
+                        >
+                            <div className="absolute inset-0 bg-white/20 rounded-t-lg opacity-0 hover:opacity-100 transition-opacity" />
+                        </div>
+                        <span className="text-[7px] font-bold text-slate-400 truncate w-full text-center">{d.label}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ==================== DONUT CHART COMPONENT ====================
+const DonutChart = ({ segments, size = 120 }) => {
+    const total = segments.reduce((acc, s) => acc + s.value, 0) || 1;
+    let cumulative = 0;
+    const radius = 42;
+    const circumference = 2 * Math.PI * radius;
+
+    return (
+        <div className="flex items-center gap-6">
+            <svg width={size} height={size} viewBox="0 0 100 100" className="transform -rotate-90">
+                <circle cx="50" cy="50" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="12" />
+                {segments.map((seg, i) => {
+                    const pct = seg.value / total;
+                    const dashArray = `${pct * circumference} ${circumference}`;
+                    const dashOffset = -cumulative * circumference;
+                    cumulative += pct;
+                    return (
+                        <circle key={i} cx="50" cy="50" r={radius} fill="none"
+                            stroke={seg.color} strokeWidth="12" strokeLinecap="round"
+                            strokeDasharray={dashArray} strokeDashoffset={dashOffset}
+                            className="transition-all duration-1000"
+                            style={{ animationDelay: `${i * 200}ms` }}
+                        />
+                    );
+                })}
+                <text x="50" y="50" textAnchor="middle" dominantBaseline="central"
+                    className="fill-slate-800 text-lg font-black" transform="rotate(90 50 50)">
+                    {total}
+                </text>
+            </svg>
+            <div className="space-y-2">
+                {segments.map((seg, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: seg.color }} />
+                        <span className="text-[10px] font-bold text-slate-600 capitalize">{seg.label}</span>
+                        <span className="text-[10px] font-black text-slate-800 ml-auto">{seg.value}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ==================== ALERT COMPOSER MODAL ====================
+const AlertComposer = ({ onClose, onSend }) => {
+    const [title, setTitle] = useState('');
+    const [message, setMessage] = useState('');
+    const [severity, setSeverity] = useState('info');
+    const [sending, setSending] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!title || !message) return;
+        setSending(true);
+        await onSend({ title, message, severity });
+        setSending(false);
+        onClose();
+    };
+
+    const severityOptions = [
+        { value: 'info', label: 'Information', icon: Info, color: 'bg-blue-50 text-blue-600 border-blue-200' },
+        { value: 'warning', label: 'Warning', icon: AlertTriangle, color: 'bg-amber-50 text-amber-600 border-amber-200' },
+        { value: 'critical', label: 'Critical', icon: AlertCircle, color: 'bg-rose-50 text-rose-600 border-rose-200' }
+    ];
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                            <BellRing size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-lg">Broadcast Alert</h3>
+                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">All users will see this message</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 space-y-5">
+                    {/* Severity Select */}
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Alert Type</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {severityOptions.map(opt => (
+                                <button key={opt.value} onClick={() => setSeverity(opt.value)}
+                                    className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all ${severity === opt.value
+                                        ? opt.color + ' border-current shadow-sm'
+                                        : 'border-slate-100 text-slate-400 hover:border-slate-200'
+                                        }`}>
+                                    <opt.icon size={18} />
+                                    <span className="text-[9px] font-black uppercase tracking-wider">{opt.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Alert Title</label>
+                        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+                            placeholder="e.g. Heavy Crowd Expected Tomorrow"
+                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-orange-500 focus:bg-white transition-all outline-none font-bold text-sm" />
+                    </div>
+
+                    {/* Message */}
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Message Body</label>
+                        <textarea value={message} onChange={(e) => setMessage(e.target.value)}
+                            placeholder="Detailed alert message for all devotees..."
+                            rows={4}
+                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-orange-500 focus:bg-white transition-all outline-none font-bold text-sm resize-none" />
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="px-6 pb-6 flex gap-3">
+                    <button onClick={onClose}
+                        className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all">
+                        Cancel
+                    </button>
+                    <button onClick={handleSubmit} disabled={!title || !message || sending}
+                        className="flex-1 py-3 bg-orange-600 text-white rounded-xl font-bold text-sm hover:bg-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20">
+                        {sending ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />}
+                        {sending ? 'Broadcasting...' : 'Send to All'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// ==================== MAIN ADMIN PAGE ====================
 const AdminPage = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
-        totalUsers: 0,
-        activeTickets: 0,
-        reportedItems: 0,
-        crowdAlerts: 0,
-        revenue: '₹0.0L'
+        totalUsers: 0, activeTickets: 0, reportedItems: 0,
+        activeAlerts: 0, revenue: '₹0.0L', recentUsers: 0,
+        userTypeBreakdown: [], ticketsPerDay: [], categoryBreakdown: []
     });
-
     const [users, setUsers] = useState([]);
     const [lostItems, setLostItems] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [zoneData, setZoneData] = useState([]);
+    const [alerts, setAlerts] = useState([]);
+    const [showAlertComposer, setShowAlertComposer] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
 
-    const BACKEND_URL = 'http://localhost:3001/api/v1/admin';
+    const getHeaders = () => {
+        const token = localStorage.getItem('token');
+        return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    };
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
+    useEffect(() => { fetchDashboardData(); }, []);
 
     const fetchDashboardData = async () => {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        const headers = { 'Authorization': `Bearer ${token}` };
+        const headers = getHeaders();
 
         try {
-            // Fetch Stats
-            const statsRes = await fetch(`${BACKEND_URL}/stats`, { headers });
-            const statsJson = await statsRes.json();
-            setStats({
-                totalUsers: statsJson.totalUsers,
-                activeTickets: statsJson.totalTickets,
-                reportedItems: statsJson.totalLostItems,
-                crowdAlerts: 0,
-                revenue: statsJson.revenue
-            });
+            const [statsRes, usersRes, lostRes, ticketsRes, densityRes, alertsRes] = await Promise.allSettled([
+                fetch(`${BACKEND_URL}/stats`, { headers }),
+                fetch(`${BACKEND_URL}/users`, { headers }),
+                fetch(`${BACKEND_URL}/lostfound`, { headers }),
+                fetch(`${BACKEND_URL}/tickets`, { headers }),
+                fetch(`${BACKEND_URL}/density`, { headers }),
+                fetch(`${BACKEND_URL}/alerts`, { headers })
+            ]);
 
-            // Fetch Users
-            const usersRes = await fetch(`${BACKEND_URL}/users`, { headers });
-            setUsers(await usersRes.json());
+            if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+                const s = await statsRes.value.json();
+                setStats({
+                    totalUsers: s.totalUsers || 0,
+                    activeTickets: s.totalTickets || 0,
+                    reportedItems: s.totalLostItems || 0,
+                    activeAlerts: s.activeAlerts || 0,
+                    revenue: s.revenue || '₹0.0L',
+                    recentUsers: s.recentUsers || 0,
+                    userTypeBreakdown: s.userTypeBreakdown || [],
+                    ticketsPerDay: s.ticketsPerDay || [],
+                    categoryBreakdown: s.categoryBreakdown || []
+                });
+            }
 
-            // Fetch Lost Items
-            const lostRes = await fetch(`${BACKEND_URL}/lostfound`, { headers });
-            setLostItems(await lostRes.json());
-
-            // Fetch Tickets/Bookings
-            const ticketsRes = await fetch(`${BACKEND_URL}/tickets`, { headers });
-            setBookings(await ticketsRes.json());
-
-            // Fetch Density
-            const densityRes = await fetch(`${BACKEND_URL}/density`, { headers });
-            setZoneData(await densityRes.json());
+            if (usersRes.status === 'fulfilled' && usersRes.value.ok) setUsers(await usersRes.value.json());
+            if (lostRes.status === 'fulfilled' && lostRes.value.ok) setLostItems(await lostRes.value.json());
+            if (ticketsRes.status === 'fulfilled' && ticketsRes.value.ok) setBookings(await ticketsRes.value.json());
+            if (densityRes.status === 'fulfilled' && densityRes.value.ok) setZoneData(await densityRes.value.json());
+            if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) setAlerts(await alertsRes.value.json());
 
         } catch (error) {
-            console.error("Master Console Error:", error);
+            console.error("Admin fetch error:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await fetchDashboardData();
+        setTimeout(() => setRefreshing(false), 600);
+    };
+
+    const handleSendAlert = async (alertData) => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/alerts`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(alertData)
+            });
+            if (res.ok) {
+                await fetchDashboardData();
+            }
+        } catch (err) {
+            console.error("Send alert error:", err);
+        }
+    };
+
+    const handleToggleAlert = async (id) => {
+        try {
+            await fetch(`${BACKEND_URL}/alerts/${id}/toggle`, {
+                method: 'PUT',
+                headers: getHeaders()
+            });
+            await fetchDashboardData();
+        } catch (err) {
+            console.error("Toggle alert error:", err);
+        }
+    };
+
+    const handleDeleteAlert = async (id) => {
+        if (!confirm('Delete this alert permanently?')) return;
+        try {
+            await fetch(`${BACKEND_URL}/alerts/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            await fetchDashboardData();
+        } catch (err) {
+            console.error("Delete alert error:", err);
         }
     };
 
     const getImageUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-        // If the path doesn't already contain /uploads/ and isn't a direct filename that should be in uploads
-        // Note: lostFoundController stores just filename, while authController stores /uploads/filename
-        if (!normalizedPath.startsWith('/uploads/')) {
-            return `http://localhost:3001/uploads${normalizedPath}`;
-        }
-        return `http://localhost:3001${normalizedPath}`;
+        const normalized = path.startsWith('/') ? path : `/${path}`;
+        if (!normalized.startsWith('/uploads/')) return `http://localhost:3001/uploads${normalized}`;
+        return `http://localhost:3001${normalized}`;
     };
 
+    const filteredUsers = users.filter(u =>
+        u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.phone?.includes(searchQuery)
+    );
+
+    const userTypeColors = {
+        Civilian: '#3b82f6', VIP: '#a855f7', Sadhu: '#f43f5e',
+        Admin: '#f97316', Aged: '#eab308', Divyang: '#10b981', ParkingOwner: '#6366f1'
+    };
+
+    const ticketChartData = stats.ticketsPerDay.map(d => ({
+        label: new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+        value: parseInt(d.count) || 0
+    }));
+
+    const userTypeChartSegments = stats.userTypeBreakdown.map(u => ({
+        label: u.userType || 'Unknown',
+        value: parseInt(u.count) || 0,
+        color: userTypeColors[u.userType] || '#94a3b8'
+    }));
+
+    const categoryChartSegments = stats.categoryBreakdown.map(c => ({
+        label: c.category || 'normal',
+        value: parseInt(c.count) || 0,
+        color: { normal: '#3b82f6', vip: '#a855f7', elderly: '#eab308', divyang: '#10b981', priest: '#f43f5e' }[c.category] || '#94a3b8'
+    }));
+
     const tabs = [
-        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'users', label: 'Devotees', icon: Users },
-        { id: 'crowd', label: 'Flow & Crowd', icon: Activity },
         { id: 'lostfound', label: 'Lost & Found', icon: Package },
         { id: 'bookings', label: 'Bookings', icon: Ticket },
+        { id: 'alerts', label: 'Alerts', icon: Bell },
+        { id: 'crowd', label: 'Crowd Flow', icon: Activity },
         { id: 'signage', label: 'Digital Board', icon: Monitor }
     ];
+
+    const getSeverityStyle = (sev) => {
+        switch (sev) {
+            case 'critical': return { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-200', icon: AlertCircle };
+            case 'warning': return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', icon: AlertTriangle };
+            default: return { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', icon: Info };
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#f8fafc] text-slate-800">
             <Header />
 
-            <div className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
+            <div className="pt-24 pb-20 px-4 md:px-8 max-w-[1500px] mx-auto">
                 {/* Admin Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-slate-900 text-white p-2 rounded-xl">
+                            <div className="bg-gradient-to-br from-slate-900 to-slate-700 text-white p-2.5 rounded-2xl shadow-xl">
                                 <ShieldCheck size={24} />
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight italic">
-                                Master <span className="text-orange-600">Console</span>
-                            </h1>
+                            <div>
+                                <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight">
+                                    Admin <span className="text-orange-600">Console</span>
+                                </h1>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Divya Yatra Control Center</p>
+                            </div>
                         </div>
-                        <p className="text-slate-500 font-medium">Control Center for Ujjain Smart Pilgrim Management</p>
                     </div>
 
-                    <div className="flex gap-3">
-                        <button className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all flex items-center gap-2">
-                            <Activity size={16} className="text-emerald-500" /> System Live
+                    <div className="flex gap-3 flex-wrap">
+                        <button onClick={handleRefresh}
+                            className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all flex items-center gap-2">
+                            <RefreshCw size={16} className={`text-emerald-500 ${refreshing ? 'animate-spin' : ''}`} />
+                            {refreshing ? 'Syncing...' : 'Refresh'}
                         </button>
-                        <button className="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-600/20 hover:bg-orange-700 transition-all flex items-center gap-2">
-                            <Zap size={16} /> Force Update
+                        <button onClick={() => setShowAlertComposer(true)}
+                            className="px-5 py-2.5 bg-orange-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-600/20 hover:bg-orange-700 transition-all flex items-center gap-2">
+                            <BellRing size={16} />
+                            Broadcast Alert
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Sidebar Tabs */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Sidebar */}
                     <div className="lg:col-span-3 space-y-2">
                         {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === tab.id
-                                    ? 'bg-slate-900 text-white shadow-xl translate-x-2'
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all ${activeTab === tab.id
+                                    ? 'bg-slate-900 text-white shadow-xl translate-x-1'
                                     : 'bg-white text-slate-500 hover:bg-slate-50 border border-transparent hover:border-slate-200 shadow-sm'
-                                    }`}
-                            >
-                                <tab.icon size={20} className={activeTab === tab.id ? 'text-orange-400' : ''} />
+                                    }`}>
+                                <tab.icon size={18} className={activeTab === tab.id ? 'text-orange-400' : ''} />
                                 {tab.label}
-                                {activeTab === tab.id && <ChevronRight size={16} className="ml-auto opacity-50" />}
+                                {tab.id === 'alerts' && stats.activeAlerts > 0 && (
+                                    <span className="ml-auto bg-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">{stats.activeAlerts}</span>
+                                )}
+                                {activeTab === tab.id && <ChevronRight size={14} className="ml-auto opacity-50" />}
                             </button>
                         ))}
 
-                        <div className="mt-10 p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl text-white relative overflow-hidden">
+                        {/* Quick Stats Card */}
+                        <div className="mt-6 p-5 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2rem] text-white relative overflow-hidden">
                             <div className="relative z-10">
-                                <h4 className="text-lg font-bold mb-2">Security Audit</h4>
-                                <p className="text-xs text-slate-400 mb-4">Last scan completed 12 mins ago. No threats detected.</p>
-                                <button className="w-full py-2 bg-slate-800 border border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all">View Logs</button>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Crown size={16} className="text-orange-400" />
+                                    <h4 className="text-sm font-black uppercase tracking-wider">Quick Intel</h4>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">New Users</p>
+                                        <p className="text-xl font-black text-orange-400">{stats.recentUsers}</p>
+                                        <p className="text-[8px] text-slate-500 font-bold">Last 7 days</p>
+                                    </div>
+                                    <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Revenue</p>
+                                        <p className="text-xl font-black text-emerald-400">{stats.revenue}</p>
+                                        <p className="text-[8px] text-slate-500 font-bold">Total earned</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-orange-600/10 rounded-full blur-2xl"></div>
+                            <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-orange-600/10 rounded-full blur-2xl" />
                         </div>
                     </div>
 
-                    {/* Content Area */}
-                    <div className="lg:col-span-9 space-y-8">
+                    {/* ==================== CONTENT AREA ==================== */}
+                    <div className="lg:col-span-9 space-y-6">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-40">
-                                <div className="w-12 h-12 border-4 border-orange-500/10 border-t-orange-500 rounded-full animate-spin mb-4"></div>
-                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Syncing with AI Core...</p>
+                                <div className="w-14 h-14 border-4 border-orange-500/10 border-t-orange-500 rounded-full animate-spin mb-4" />
+                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Loading dashboard...</p>
                             </div>
-                        ) : activeTab === 'overview' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {/* Stats Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-                                    {[
-                                        { label: 'Total Devotees', val: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                                        { label: 'Active Bookings', val: stats.activeTickets, icon: Ticket, color: 'text-orange-600', bg: 'bg-orange-50' },
-                                        { label: 'Cloud Density', val: 'Low', icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                        { label: 'Net Revenue', val: stats.revenue, icon: BarChart3, color: 'text-purple-600', bg: 'bg-purple-50' }
-                                    ].map((s, idx) => (
-                                        <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all group">
-                                            <div className={`${s.bg} ${s.color} w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                                                <s.icon size={20} />
-                                            </div>
-                                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{s.label}</p>
-                                            <h3 className="text-2xl font-black text-slate-800">{s.val}</h3>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Main Charts/Tables Placeholder */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h3 className="text-xl font-bold">Flow Distribution</h3>
-                                            <button className="text-xs font-bold text-orange-600 hover:underline">Full Map</button>
-                                        </div>
-                                        <div className="space-y-6">
+                        ) : (
+                            <>
+                                {/* ========== OVERVIEW TAB ========== */}
+                                {activeTab === 'overview' && (
+                                    <div className="space-y-6">
+                                        {/* Stats Cards */}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                             {[
-                                                { zone: 'Main Sanctum', count: 420, cap: 500, color: 'bg-orange-500' },
-                                                { zone: 'Nandi Hall', count: 180, cap: 300, color: 'bg-blue-500' },
-                                                { zone: 'Mahakal Corridor', count: 1200, cap: 5000, color: 'bg-emerald-500' },
-                                                { zone: 'Outer Entry', count: 85, cap: 200, color: 'bg-purple-500' }
-                                            ].map((z, idx) => (
-                                                <div key={idx} className="space-y-2">
-                                                    <div className="flex justify-between text-xs font-bold">
-                                                        <span className="text-slate-600">{z.zone}</span>
-                                                        <span className="text-slate-400">{z.count} / {z.cap}</span>
+                                                { label: 'Total Devotees', val: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', trend: `+${stats.recentUsers} this week` },
+                                                { label: 'Active Bookings', val: stats.activeTickets, icon: Ticket, color: 'text-orange-600', bg: 'bg-orange-50', trend: 'All time' },
+                                                { label: 'Lost & Found', val: stats.reportedItems, icon: Package, color: 'text-rose-600', bg: 'bg-rose-50', trend: 'Total reports' },
+                                                { label: 'Active Alerts', val: stats.activeAlerts, icon: Bell, color: 'text-amber-600', bg: 'bg-amber-50', trend: 'Broadcasting now' }
+                                            ].map((s, idx) => (
+                                                <div key={idx} className="bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all group">
+                                                    <div className={`${s.bg} ${s.color} w-10 h-10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                                                        <s.icon size={20} />
                                                     </div>
-                                                    <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden">
-                                                        <div className={`h-full ${z.color} transition-all duration-1000`} style={{ width: `${(z.count / z.cap) * 100}%` }}></div>
-                                                    </div>
+                                                    <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">{s.label}</p>
+                                                    <h3 className="text-2xl font-black text-slate-800">{s.val}</h3>
+                                                    <p className="text-[9px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                                                        <TrendingUp size={10} className="text-emerald-500" /> {s.trend}
+                                                    </p>
                                                 </div>
                                             ))}
+                                        </div>
+
+                                        {/* Charts Row */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Booking Trend */}
+                                            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h3 className="text-lg font-black text-slate-900">Booking Trend</h3>
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Last 7 Days</span>
+                                                </div>
+                                                {ticketChartData.length > 0 ? (
+                                                    <MiniBarChart data={ticketChartData} label="Tickets per Day" color="#f97316" />
+                                                ) : (
+                                                    <div className="h-32 flex items-center justify-center text-slate-300 text-sm font-bold">No booking data yet</div>
+                                                )}
+                                            </div>
+
+                                            {/* User Type Distribution */}
+                                            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h3 className="text-lg font-black text-slate-900">User Distribution</h3>
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">By Category</span>
+                                                </div>
+                                                {userTypeChartSegments.length > 0 ? (
+                                                    <DonutChart segments={userTypeChartSegments} />
+                                                ) : (
+                                                    <div className="h-32 flex items-center justify-center text-slate-300 text-sm font-bold">No user data</div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Second Row */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Category Breakdown */}
+                                            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                                                <h3 className="text-lg font-black text-slate-900 mb-6">Ticket Categories</h3>
+                                                {categoryChartSegments.length > 0 ? (
+                                                    <DonutChart segments={categoryChartSegments} />
+                                                ) : (
+                                                    <div className="h-32 flex items-center justify-center text-slate-300 text-sm font-bold">No category data</div>
+                                                )}
+                                            </div>
+
+                                            {/* Recent Activity */}
+                                            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h3 className="text-lg font-black text-slate-900">Recent Activity</h3>
+                                                    <span className="px-2 py-1 bg-rose-50 text-rose-600 rounded-lg text-[9px] font-black uppercase">{lostItems.length} Reports</span>
+                                                </div>
+                                                <div className="space-y-3 max-h-[180px] overflow-y-auto">
+                                                    {lostItems.slice(0, 5).map((item, idx) => (
+                                                        <div key={idx} className={`p-3 ${item.status === 'found' ? 'bg-emerald-50 border-emerald-100' : 'bg-orange-50 border-orange-100'} border rounded-xl flex gap-3 items-center`}>
+                                                            <div className={`w-8 h-8 ${item.status === 'found' ? 'bg-emerald-500' : 'bg-orange-500'} text-white rounded-lg flex items-center justify-center shrink-0`}>
+                                                                {item.status === 'found' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-bold text-slate-800 truncate capitalize">{item.title}</p>
+                                                                <p className="text-[10px] text-slate-400">{new Date(item.uploadedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {lostItems.length === 0 && (
+                                                        <div className="py-8 text-center text-slate-300 text-sm font-bold">No recent activity</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Zone Flow */}
+                                        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                                            <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                                                <Activity size={20} className="text-orange-500" /> Zone Capacity Overview
+                                            </h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                {[
+                                                    { zone: 'Main Sanctum', count: 420, cap: 500, color: 'bg-orange-500' },
+                                                    { zone: 'Nandi Hall', count: 180, cap: 300, color: 'bg-blue-500' },
+                                                    { zone: 'Mahakal Corridor', count: 1200, cap: 5000, color: 'bg-emerald-500' },
+                                                    { zone: 'Outer Entry', count: 85, cap: 200, color: 'bg-purple-500' }
+                                                ].map((z, idx) => (
+                                                    <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">{z.zone}</p>
+                                                        <div className="flex items-end justify-between mb-2">
+                                                            <span className="text-2xl font-black text-slate-800">{z.count}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400">/ {z.cap}</span>
+                                                        </div>
+                                                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                                            <div className={`h-full ${z.color} rounded-full transition-all duration-1000`} style={{ width: `${(z.count / z.cap) * 100}%` }} />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
+                                )}
 
-                                    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h3 className="text-xl font-bold">Live Activity Log</h3>
-                                            <span className="px-2 py-1 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase">{lostItems.length} Recent Events</span>
+                                {/* ========== USERS TAB ========== */}
+                                {activeTab === 'users' && (
+                                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/30">
+                                            <div>
+                                                <h3 className="text-xl font-black text-slate-900">All Devotees</h3>
+                                                <p className="text-xs text-slate-400 font-bold">{users.length} registered users</p>
+                                            </div>
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                                    placeholder="Search name, email, phone..."
+                                                    className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none w-72 shadow-sm" />
+                                            </div>
                                         </div>
-                                        <div className="space-y-4">
-                                            {lostItems.slice(0, 3).map((item, idx) => (
-                                                <div key={idx} className={`p-4 ${item.status === 'found' ? 'bg-emerald-50 border-emerald-100' : 'bg-orange-50 border-orange-100'} border rounded-2xl flex gap-4 animate-in fade-in slide-in-from-right duration-500`} style={{ animationDelay: `${idx * 150}ms` }}>
-                                                    <div className={`w-10 h-10 ${item.status === 'found' ? 'bg-emerald-500' : 'bg-orange-500'} text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg`}>
-                                                        {item.status === 'found' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                                                    </div>
-                                                    <div>
-                                                        <p className={`text-sm font-bold ${item.status === 'found' ? 'text-emerald-900' : 'text-orange-900'} leading-tight capitalize`}>New {item.status} Item: {item.title}</p>
-                                                        <p className={`text-xs ${item.status === 'found' ? 'text-emerald-600' : 'text-orange-600'} mt-1 truncate max-w-[200px]`}>{item.description || 'No description provided.'}</p>
-                                                    </div>
-                                                    <span className="ml-auto text-[10px] font-bold text-slate-400">{new Date(item.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                </div>
-                                            ))}
-                                            {lostItems.length === 0 && (
-                                                <div className="py-10 text-center text-slate-400 text-sm">No recent activity logged.</div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left">
+                                                <thead>
+                                                    <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                                        <th className="px-6 py-4">Devotee</th>
+                                                        <th className="px-6 py-4">Contact</th>
+                                                        <th className="px-6 py-4">Category</th>
+                                                        <th className="px-6 py-4">Joined</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {filteredUsers.map(u => (
+                                                        <tr key={u.client_id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange-100 shadow-sm shrink-0">
+                                                                        {u.profile_image ? (
+                                                                            <img src={getImageUrl(u.profile_image)} alt={u.name} className="w-full h-full object-cover" />
+                                                                        ) : (
+                                                                            <div className="w-full h-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm">
+                                                                                {u.name?.[0]?.toUpperCase()}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-bold text-slate-900 text-sm">{u.name}</p>
+                                                                        <p className="text-[10px] text-slate-400 font-mono">ID-{String(u.client_id).padStart(6, '0')}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <p className="text-xs font-bold text-slate-600">{u.phone}</p>
+                                                                <p className="text-[10px] text-slate-400 truncate max-w-[180px]">{u.email || '-'}</p>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase"
+                                                                    style={{
+                                                                        backgroundColor: (userTypeColors[u.userType] || '#94a3b8') + '15',
+                                                                        color: userTypeColors[u.userType] || '#94a3b8'
+                                                                    }}>
+                                                                    {u.userType}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-xs font-medium text-slate-400">
+                                                                {new Date(u.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {filteredUsers.length === 0 && (
+                                                <div className="py-16 text-center text-slate-300 font-bold">No users found</div>
                                             )}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        )}
+                                )}
 
-                        {activeTab === 'users' && (
-                            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                                    <h3 className="text-2xl font-black">All Devotees</h3>
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input type="text" placeholder="Search by name or ID..." className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none w-64 shadow-sm" />
-                                    </div>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                                <th className="px-8 py-5">Devotee</th>
-                                                <th className="px-8 py-5">Category</th>
-                                                <th className="px-8 py-5">Status</th>
-                                                <th className="px-8 py-5">Entry Time</th>
-                                                <th className="px-8 py-5">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50">
-                                            {users.map(u => (
-                                                <tr key={u.client_id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-8 py-5">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange-100 shadow-sm">
-                                                                {u.profile_image ? (
-                                                                    <img
-                                                                        src={getImageUrl(u.profile_image)}
-                                                                        alt={u.name}
-                                                                        className="w-full h-full object-cover"
-                                                                    />
+                                {/* ========== LOST & FOUND TAB ========== */}
+                                {activeTab === 'lostfound' && (
+                                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                                            <div>
+                                                <h3 className="text-xl font-black">Lost & Found Repository</h3>
+                                                <p className="text-xs text-slate-400 font-bold">{lostItems.length} total reports</p>
+                                            </div>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left">
+                                                <thead>
+                                                    <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                                        <th className="px-6 py-4">Image</th>
+                                                        <th className="px-6 py-4">Details</th>
+                                                        <th className="px-6 py-4">Contact</th>
+                                                        <th className="px-6 py-4">Status</th>
+                                                        <th className="px-6 py-4">Reported</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50 text-sm">
+                                                    {lostItems.map(item => (
+                                                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-6 py-4">
+                                                                {item.image ? (
+                                                                    <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-200">
+                                                                        <img src={getImageUrl(item.image)} alt="Item" className="w-full h-full object-cover" />
+                                                                    </div>
                                                                 ) : (
-                                                                    <div className="w-full h-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">
-                                                                        {u.name[0]}
+                                                                    <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
+                                                                        <Package size={20} />
                                                                     </div>
                                                                 )}
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-900">{u.name}</p>
-                                                                <p className="text-[10px] text-slate-400 font-mono">ID-{u.client_id.toString().padStart(6, '0')}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-5">
-                                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${u.userType === 'Premium' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>
-                                                            {u.userType}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-8 py-5">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                                                            <span className="text-xs font-bold text-slate-600">Registered</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-5 text-sm font-medium text-slate-500">{new Date(u.created_at).toLocaleDateString()}</td>
-                                                    <td className="px-8 py-5">
-                                                        <button className="p-2 hover:bg-white rounded-lg text-slate-300 hover:text-slate-600 transition-all border border-transparent hover:border-slate-200">
-                                                            <MoreVertical size={16} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'signage' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center">
-                                    <div className="w-20 h-20 bg-orange-100 text-orange-600 rounded-[2rem] flex items-center justify-center mb-6">
-                                        <Monitor size={40} />
-                                    </div>
-                                    <h3 className="text-2xl font-black mb-4 tracking-tight">Main Gateway Signage</h3>
-                                    <p className="text-slate-500 text-sm mb-8">Current active board: <strong>Safety & Density Alerts</strong></p>
-
-                                    <div className="w-full space-y-3">
-                                        <button className="w-full py-4 bg-orange-50 text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-3">
-                                            Push Crowd Alert Board
-                                        </button>
-                                        <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3">
-                                            Show Route Guidance
-                                        </button>
-                                        <button className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold flex items-center justify-center gap-3">
-                                            Emergency Evacuation Mode
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative flex flex-col">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <h3 className="text-lg font-bold flex items-center gap-2">
-                                            <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span> Live Preview
-                                        </h3>
-                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Board #04</span>
-                                    </div>
-
-                                    <div className="flex-1 flex flex-col items-center justify-center border-2 border-slate-800 rounded-[2rem] p-6 bg-slate-950/50">
-                                        <h2 className="text-3xl font-black text-white text-center mb-4 leading-tight italic">
-                                            SANCTUM <span className="text-orange-500 underline decoration-4 underline-offset-8 font-serif">DARSHAN</span> OPEN
-                                        </h2>
-                                        <div className="grid grid-cols-2 gap-4 w-full mt-6">
-                                            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center">
-                                                <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest mb-1">Queue Time</p>
-                                                <p className="text-xl font-bold text-orange-400">12 MINS</p>
-                                            </div>
-                                            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center">
-                                                <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest mb-1">Density</p>
-                                                <p className="text-xl font-bold text-emerald-400 italic">LIGHT</p>
-                                            </div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <p className="font-bold text-slate-800">{item.title}</p>
+                                                                <p className="text-[10px] text-slate-400 line-clamp-1">{item.description || 'No description'}</p>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-slate-500">
+                                                                <p className="text-xs font-bold">{item.reportedByPhone}</p>
+                                                                <p className="text-[10px] opacity-60">{item.reportedByEmail}</p>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${item.status === 'found' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                                    {item.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-slate-400 text-xs font-medium">
+                                                                {new Date(item.uploadedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {lostItems.length === 0 && (
+                                                <div className="py-16 text-center text-slate-300 font-bold">No reports yet</div>
+                                            )}
                                         </div>
                                     </div>
+                                )}
 
-                                    <p className="mt-6 text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Hardware ID: OREO-DISPLAY-01-V2</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'lostfound' && (
-                            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                                    <h3 className="text-2xl font-black">Lost & Found Repository</h3>
-                                    <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-2">
-                                        <Search size={14} /> Filter Reports
-                                    </button>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                                <th className="px-8 py-5">Item Preview</th>
-                                                <th className="px-8 py-5">Title & Desc</th>
-                                                <th className="px-8 py-5">Contact Details</th>
-                                                <th className="px-8 py-5">Status</th>
-                                                <th className="px-8 py-5">Reported At</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50 text-sm">
-                                            {lostItems.map(item => (
-                                                <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-8 py-5">
-                                                        {item.image ? (
-                                                            <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200">
-                                                                <img
-                                                                    src={getImageUrl(item.image)}
-                                                                    alt="Item"
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
-                                                                <Package size={24} />
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-8 py-5">
-                                                        <p className="font-bold text-slate-800">{item.title}</p>
-                                                        <p className="text-xs text-slate-400 line-clamp-1 italic">{item.description || 'No description'}</p>
-                                                    </td>
-                                                    <td className="px-8 py-5 text-slate-500">
-                                                        <p className="text-sm font-bold">{item.reportedByPhone}</p>
-                                                        <p className="text-[10px] opacity-60 italic">{item.reportedByEmail}</p>
-                                                    </td>
-                                                    <td className="px-8 py-5">
-                                                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${item.status === 'found' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-                                                            }`}>
-                                                            {item.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-8 py-5 text-slate-400 font-medium">
-                                                        {new Date(item.uploadedAt).toLocaleDateString()}<br />
-                                                        {new Date(item.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'bookings' && (
-                            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                                    <h3 className="text-2xl font-black">Ticket Bookings</h3>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                                <th className="px-8 py-5">Ticket ID</th>
-                                                <th className="px-8 py-5">Devotee</th>
-                                                <th className="px-8 py-5">Date / Time</th>
-                                                <th className="px-8 py-5">Tickets</th>
-                                                <th className="px-8 py-5">Temple</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50 text-sm">
-                                            {bookings.map(b => (
-                                                <tr key={b.ticket_id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-8 py-5 font-mono font-bold text-orange-600">#{b.ticket_id}</td>
-                                                    <td className="px-8 py-5 font-bold text-slate-800">{b.Client?.name || 'Unknown'}</td>
-                                                    <td className="px-8 py-5 text-slate-500">{b.date} | {b.time}</td>
-                                                    <td className="px-8 py-5 font-black">{b.no_of_tickets}</td>
-                                                    <td className="px-8 py-5 text-slate-400">{b.temple}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'crowd' && (
-                            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                                    <h3 className="text-2xl font-black">Zone Capacity Monitoring</h3>
-                                </div>
-                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {zoneData.map((zone, idx) => (
-                                        <div key={idx} className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h4 className="font-black text-slate-900">Zone #{zone.zone_id}</h4>
-                                                <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${zone.count > 10 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                                                    {zone.count > 10 ? 'High' : 'Optimal'}
-                                                </span>
+                                {/* ========== BOOKINGS TAB ========== */}
+                                {activeTab === 'bookings' && (
+                                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                                            <div>
+                                                <h3 className="text-xl font-black">Ticket Bookings</h3>
+                                                <p className="text-xs text-slate-400 font-bold">{bookings.length} total bookings</p>
                                             </div>
-                                            <div className="text-4xl font-black text-orange-600 mb-2">{zone.count}</div>
-                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Active Devotees</p>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left">
+                                                <thead>
+                                                    <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                                        <th className="px-6 py-4">Ticket ID</th>
+                                                        <th className="px-6 py-4">Devotee</th>
+                                                        <th className="px-6 py-4">Date / Time</th>
+                                                        <th className="px-6 py-4">Category</th>
+                                                        <th className="px-6 py-4">Tickets</th>
+                                                        <th className="px-6 py-4">Temple</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50 text-sm">
+                                                    {bookings.map(b => (
+                                                        <tr key={b.ticket_id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-6 py-4 font-mono font-bold text-orange-600">#{b.ticket_id}</td>
+                                                            <td className="px-6 py-4 font-bold text-slate-800">{b.Client?.name || 'Unknown'}</td>
+                                                            <td className="px-6 py-4 text-slate-500">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Calendar size={12} className="text-slate-400" />
+                                                                    <span>{b.date}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                                    <Clock size={12} className="text-slate-400" />
+                                                                    <span className="text-[10px]">{b.time}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-blue-50 text-blue-600">
+                                                                    {b.category || 'normal'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 font-black text-slate-800">{b.no_of_tickets}</td>
+                                                            <td className="px-6 py-4 text-slate-400 text-xs">{b.temple}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {bookings.length === 0 && (
+                                                <div className="py-16 text-center text-slate-300 font-bold">No bookings yet</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ========== ALERTS TAB ========== */}
+                                {activeTab === 'alerts' && (
+                                    <div className="space-y-6">
+                                        {/* Alert Composer Button */}
+                                        <div className="bg-gradient-to-r from-orange-600 to-red-600 rounded-[2rem] p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-orange-600/10">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+                                                    <BellRing size={28} className="text-white" />
+                                                </div>
+                                                <div className="text-white">
+                                                    <h3 className="text-xl font-black">Alert Broadcast System</h3>
+                                                    <p className="text-white/70 text-xs font-bold">Send real-time alerts to all devotees instantly</p>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => setShowAlertComposer(true)}
+                                                className="px-8 py-3 bg-white text-orange-600 rounded-xl font-black text-sm hover:bg-orange-50 transition-all shadow-lg whitespace-nowrap">
+                                                + New Alert
+                                            </button>
+                                        </div>
+
+                                        {/* Alert List */}
+                                        <div className="space-y-3">
+                                            {alerts.map(alert => {
+                                                const style = getSeverityStyle(alert.severity);
+                                                const Icon = style.icon;
+                                                return (
+                                                    <div key={alert.alert_id}
+                                                        className={`${style.bg} border ${style.border} rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-all ${!alert.is_active ? 'opacity-50' : ''}`}>
+                                                        <div className={`w-10 h-10 rounded-xl ${style.text} ${style.bg} flex items-center justify-center shrink-0 border ${style.border}`}>
+                                                            <Icon size={20} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h4 className="font-black text-slate-900 text-sm">{alert.title}</h4>
+                                                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${style.text} ${style.bg} border ${style.border}`}>
+                                                                    {alert.severity}
+                                                                </span>
+                                                                {alert.is_active ? (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-emerald-100 text-emerald-600">LIVE</span>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-slate-100 text-slate-400">OFF</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-slate-600 leading-relaxed">{alert.message}</p>
+                                                            <p className="text-[10px] text-slate-400 mt-1 font-bold">
+                                                                By {alert.Client?.name || 'System'} • {new Date(alert.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button onClick={() => handleToggleAlert(alert.alert_id)}
+                                                                className="p-2 rounded-lg hover:bg-white/50 transition-all" title={alert.is_active ? 'Deactivate' : 'Activate'}>
+                                                                {alert.is_active ? <ToggleRight size={22} className="text-emerald-600" /> : <ToggleLeft size={22} className="text-slate-400" />}
+                                                            </button>
+                                                            <button onClick={() => handleDeleteAlert(alert.alert_id)}
+                                                                className="p-2 rounded-lg hover:bg-rose-100 transition-all text-rose-400 hover:text-rose-600" title="Delete">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {alerts.length === 0 && (
+                                                <div className="text-center py-20 bg-white rounded-[2rem] border border-slate-100">
+                                                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <Bell size={32} className="text-slate-300" />
+                                                    </div>
+                                                    <h3 className="text-lg font-black text-slate-800 mb-2">No Alerts Sent</h3>
+                                                    <p className="text-sm text-slate-400 mb-6">Create your first broadcast to notify all devotees</p>
+                                                    <button onClick={() => setShowAlertComposer(true)}
+                                                        className="px-6 py-3 bg-orange-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-600/20">
+                                                        Create First Alert
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ========== CROWD TAB ========== */}
+                                {activeTab === 'crowd' && (
+                                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+                                            <h3 className="text-xl font-black">Zone Capacity Monitoring</h3>
+                                            <p className="text-xs text-slate-400 font-bold">Real-time crowd density across zones</p>
+                                        </div>
+                                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {zoneData.length > 0 ? zoneData.map((zone, idx) => (
+                                                <div key={idx} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-md transition-all">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <h4 className="font-black text-slate-900">Zone #{zone.zone_id}</h4>
+                                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${zone.count > 10 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                            {zone.count > 10 ? 'High Density' : 'Optimal'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-4xl font-black text-orange-600 mb-1">{zone.count}</div>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Active Devotees</p>
+                                                </div>
+                                            )) : (
+                                                <div className="col-span-2 py-16 text-center text-slate-300 font-bold">No zone tracking data available</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ========== SIGNAGE TAB ========== */}
+                                {activeTab === 'signage' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center">
+                                            <div className="w-20 h-20 bg-orange-100 text-orange-600 rounded-[2rem] flex items-center justify-center mb-6">
+                                                <Monitor size={40} />
+                                            </div>
+                                            <h3 className="text-2xl font-black mb-3 tracking-tight">Digital Signage</h3>
+                                            <p className="text-slate-500 text-sm mb-8">Control display boards across all temple zones</p>
+                                            <div className="w-full space-y-3">
+                                                <button className="w-full py-4 bg-orange-50 text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-orange-100 transition-all">
+                                                    <Bell size={16} /> Push Crowd Alert Board
+                                                </button>
+                                                <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
+                                                    <Shield size={16} /> Show Route Guidance
+                                                </button>
+                                                <button className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-50 transition-all">
+                                                    <AlertTriangle size={16} /> Emergency Evacuation Mode
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative flex flex-col overflow-hidden">
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> Live Preview
+                                                </h3>
+                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Board #04</span>
+                                            </div>
+                                            <div className="flex-1 flex flex-col items-center justify-center border-2 border-slate-800 rounded-[2rem] p-6 bg-slate-950/50">
+                                                <h2 className="text-3xl font-black text-center mb-4 leading-tight">
+                                                    SANCTUM <span className="text-orange-500">DARSHAN</span> OPEN
+                                                </h2>
+                                                <div className="grid grid-cols-2 gap-4 w-full mt-6">
+                                                    <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center">
+                                                        <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest mb-1">Queue Time</p>
+                                                        <p className="text-xl font-bold text-orange-400">12 MINS</p>
+                                                    </div>
+                                                    <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center">
+                                                        <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest mb-1">Density</p>
+                                                        <p className="text-xl font-bold text-emerald-400">LIGHT</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="mt-6 text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Hardware ID: OREO-DISPLAY-01-V2</p>
+                                            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-orange-600/10 rounded-full blur-3xl" />
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* Alert Composer Modal */}
+            {showAlertComposer && (
+                <AlertComposer onClose={() => setShowAlertComposer(false)} onSend={handleSendAlert} />
+            )}
 
             <Footer />
         </div>

@@ -15,7 +15,7 @@ import familyMemberRoutes from "./routes/familyMemberRoutes.js";
 
 import nearbyRoutes from "./routes/nearbyRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
-
+import Alert from "./models/alert.js"; // Ensures alerts table is created on sync
 
 import cors from "cors";
 import path from "path";

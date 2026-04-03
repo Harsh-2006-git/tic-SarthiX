@@ -6,7 +6,7 @@ import LostAndFound from "./pages/LostAndFound";
 import LiveDarshan from "./pages/LiveDarshan";
 import ProtectedRoute from "./components/PrivateRoute";
 import ProfilePage from "./pages/profile";
-import Ticket from "./pages/ticket";
+import Ticket from "./pages/Ticket";
 import Density from "./pages/density";
 import CrowdDetector from "./pages/CrowdDetector";
 import MapPage from "./pages/MapPage";
@@ -22,6 +22,7 @@ import AIAssistant from "./components/AIAssistant";
 import NearbyServices from "./pages/NearbyServices";
 import ChatbotPage from "./pages/ChatbotPage";
 import ScrollToTop from "./components/ScrollToTop";
+import AlertBanner from "./components/AlertBanner";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -93,6 +94,7 @@ function App() {
         <Route path="*" element={<Navigate to="/auth" />} />
 
       </Routes>
+      <AlertBanner />
     </div>
   );
 }

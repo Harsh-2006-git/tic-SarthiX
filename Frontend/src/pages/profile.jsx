@@ -59,9 +59,14 @@ const ProfileRfidPage = () => {
   const fetchFamilyMembers = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) return; // Skip if no token — fetchProfile will handle redirect
       const res = await fetch("http://localhost:3001/api/v1/family/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        // Token is invalid/expired — fetchProfile will handle the redirect
+        return;
+      }
       const data = await res.json();
       if (res.ok) setFamilyMembers(data.members || []);
     } catch (err) {
@@ -118,6 +123,14 @@ const ProfileRfidPage = () => {
       const res = await fetch("http://localhost:3001/api/v1/auth/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // Token is expired or invalid — clear storage and redirect to login
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/auth");
+        return;
+      }
 
       if (res.ok) {
         const data = await res.json();

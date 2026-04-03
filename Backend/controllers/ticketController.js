@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 // Create Ticket
 export const createTicket = async (req, res) => {
   try {
-    const { date, time, temple, no_of_tickets } = req.body;
+    const { date, time, temple, no_of_tickets, category } = req.body;
     const client_id = req.user.client_id;
     if (no_of_tickets > 10) {
       return res
@@ -23,6 +23,7 @@ export const createTicket = async (req, res) => {
       time,
       temple,
       no_of_tickets,
+      category: category || "normal",
     });
 
     const qrData = {
@@ -31,6 +32,7 @@ export const createTicket = async (req, res) => {
       temples: ticket.temple,
       date: ticket.date,
       time: ticket.time,
+      category: ticket.category,
     };
 
     const qrCode = await QRCode.toDataURL(JSON.stringify(qrData));
@@ -70,9 +72,7 @@ export const getTicketsByClient = async (req, res) => {
     });
 
     if (!tickets.length) {
-      return res
-        .status(404)
-        .json({ message: "No tickets found for this client." });
+      return res.status(200).json([]);
     }
 
     res.json(tickets);

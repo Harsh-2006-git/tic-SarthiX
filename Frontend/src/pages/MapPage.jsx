@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MapPin, Compass, Search, LocateFixed, Layers, Info, Sparkles, TrendingUp, Anchor, Trash2 } from 'lucide-react';

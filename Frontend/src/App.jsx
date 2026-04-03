@@ -21,6 +21,7 @@ import AIAssistantPage from "./pages/AIAssistantPage";
 import AIAssistant from "./components/AIAssistant";
 import NearbyServices from "./pages/NearbyServices";
 import ChatbotPage from "./pages/ChatbotPage";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -50,6 +51,7 @@ function App() {
 
   return (
     <div className="app">
+      <ScrollToTop />
       <Routes>
         <Route
           path="/"

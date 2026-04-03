@@ -44,6 +44,11 @@ const Ticket = sequelize.define(
         max: 10, // 🔹 max 10 tickets allowed
       },
     },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "normal",
+    },
   },
   {
     tableName: "tickets",

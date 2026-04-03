@@ -14,7 +14,7 @@ const Client = sequelize.define(
     phone: { type: DataTypes.STRING, allowNull: false, unique: true },
     email: { type: DataTypes.STRING, allowNull: true, unique: true },
     userType: {
-      type: DataTypes.ENUM("Civilian", "VIP", "Sadhu", "Admin", "Aged", "ParkingOwner"),
+      type: DataTypes.ENUM("Civilian", "VIP", "Sadhu", "Admin", "Aged", "ParkingOwner", "Divyang"),
       defaultValue: "Civilian",
     },
     password: { type: DataTypes.STRING, allowNull: true },

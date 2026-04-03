@@ -33,6 +33,15 @@ const DivyaYatraBooking = () => {
   const [loading, setLoading] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("normal");
+
+  const categories = {
+    normal: { label: "Normal", limit: 60, color: "text-blue-600", bg: "bg-blue-50" },
+    vip: { label: "VIP", limit: 10, color: "text-purple-600", bg: "bg-purple-50" },
+    elderly: { label: "Elderly", limit: 10, color: "text-amber-600", bg: "bg-amber-50" },
+    divyang: { label: "Divyang", limit: 10, color: "text-emerald-600", bg: "bg-emerald-50" },
+    priest: { label: "Priest", limit: 10, color: "text-rose-600", bg: "bg-rose-50" },
+  };
 
   const timeSlots = [
     "08:00 AM",
@@ -62,6 +71,17 @@ const DivyaYatraBooking = () => {
     "08:00 PM",
   ];
 
+  const formatTimeRange = (slot) => {
+    const slotIndex = timeSlots.indexOf(slot);
+    if (slotIndex === -1) return slot;
+    if (slotIndex === timeSlots.length - 1) {
+      // Manual calculation for the last slot (adding 30 mins)
+      if (slot === "08:00 PM") return "08:00 PM to 08:30 PM";
+      return slot;
+    }
+    return `${slot} to ${timeSlots[slotIndex + 1]}`;
+  };
+
   const API = axios.create({
     baseURL: "http://localhost:3001/api/v1",
   });
@@ -75,7 +95,13 @@ const DivyaYatraBooking = () => {
     const initialCapacity = {};
     timeSlots.forEach((slot) => {
       initialCapacity[slot] = {
-        booked: Math.floor(Math.random() * 50),
+        booked: {
+          normal: Math.floor(Math.random() * 30),
+          vip: Math.floor(Math.random() * 5),
+          elderly: Math.floor(Math.random() * 5),
+          divyang: Math.floor(Math.random() * 5),
+          priest: Math.floor(Math.random() * 5),
+        },
         maxCapacity: 100,
       };
     });
@@ -91,7 +117,7 @@ const DivyaYatraBooking = () => {
     try {
       setLoading(true);
 
-      // Prefill clientInfo from localStorage if not already set
+      // Prefill clientInfo and auto-select category from localStorage
       const savedUser = localStorage.getItem("user");
       if (savedUser) {
         const user = JSON.parse(savedUser);
@@ -101,15 +127,31 @@ const DivyaYatraBooking = () => {
           email: user.email || prev.email,
           phone: user.phone || prev.phone,
         }));
+
+        // Map userType to category
+        const userTypeMap = {
+          "Civilian": "normal",
+          "VIP": "vip",
+          "Aged": "elderly",
+          "Sadhu": "priest",
+          "Divyang": "divyang",
+          "Admin": "normal"
+        };
+        
+        if (user.userType && userTypeMap[user.userType]) {
+          setSelectedCategory(userTypeMap[user.userType]);
+        }
       }
 
       const res = await API.get("/ticket/get", config);
       console.log("API Response:", res.data);
 
-      if (res.data.tickets) {
-        setBookedTickets(res.data.tickets);
-      } else if (Array.isArray(res.data)) {
+      if (res.data && Array.isArray(res.data)) {
         setBookedTickets(res.data);
+      } else if (res.data && res.data.tickets) {
+        setBookedTickets(res.data.tickets);
+      } else {
+        setBookedTickets([]);
       }
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -121,13 +163,14 @@ const DivyaYatraBooking = () => {
     }
   };
 
-  const getNextAvailableSlot = (requestedTime, requestedTickets) => {
+  const getNextAvailableSlot = (requestedTime, requestedTickets, category) => {
     const currentIndex = timeSlots.indexOf(requestedTime);
     for (let i = currentIndex; i < timeSlots.length; i++) {
       const slot = timeSlots[i];
-      const available =
-        timeSlotCapacity[slot]?.maxCapacity -
-        (timeSlotCapacity[slot]?.booked || 0);
+      const categoryBooked = timeSlotCapacity[slot]?.booked[category] || 0;
+      const categoryLimit = categories[category].limit;
+      const available = categoryLimit - categoryBooked;
+      
       if (available >= requestedTickets) return slot;
     }
     return null;
@@ -144,9 +187,9 @@ const DivyaYatraBooking = () => {
       return;
     }
 
-    const availableSlot = getNextAvailableSlot(selectedTime, ticketCount);
+    const availableSlot = getNextAvailableSlot(selectedTime, ticketCount, selectedCategory);
     if (!availableSlot) {
-      alert("No available slots for today. Please try another date.");
+      alert(`Only ${categories[selectedCategory].limit} tickets are reserved for ${categories[selectedCategory].label} category in each slot. This category is currently full for your selected time. Please try another time or date.`);
       return;
     }
 
@@ -155,8 +198,9 @@ const DivyaYatraBooking = () => {
       const ticketData = {
         date: selectedDate,
         time: availableSlot,
-        temples: "Mahakaleshwar",
+        temple: "Mahakaleshwar",
         no_of_tickets: ticketCount,
+        category: selectedCategory,
       };
 
       const res = await API.post("/ticket/create", ticketData, config);
@@ -165,7 +209,10 @@ const DivyaYatraBooking = () => {
         ...prev,
         [availableSlot]: {
           ...prev[availableSlot],
-          booked: prev[availableSlot].booked + ticketCount,
+          booked: {
+            ...prev[availableSlot].booked,
+            [selectedCategory]: prev[availableSlot].booked[selectedCategory] + ticketCount,
+          },
         },
       }));
 
@@ -202,7 +249,8 @@ const DivyaYatraBooking = () => {
   const getSlotStatus = (slot) => {
     const capacity = timeSlotCapacity[slot];
     if (!capacity) return "available";
-    const available = capacity.maxCapacity - capacity.booked;
+    const totalBooked = Object.values(capacity.booked).reduce((a, b) => a + b, 0);
+    const available = capacity.maxCapacity - totalBooked;
     if (available === 0) return "full";
     if (available <= 10) return "filling";
     return "available";
@@ -291,43 +339,92 @@ const DivyaYatraBooking = () => {
           <label className="block text-gray-700 font-semibold mb-3">
             Select Time Slot
           </label>
-          <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
             {timeSlots.map((slot) => {
               const status = getSlotStatus(slot);
               const capacity = timeSlotCapacity[slot];
-              const available = capacity
-                ? capacity.maxCapacity - capacity.booked
-                : 100;
+              const totalBooked = capacity ? Object.values(capacity.booked).reduce((a, b) => a + b, 0) : 0;
+              const available = capacity ? capacity.maxCapacity - totalBooked : 100;
+              const isSelected = selectedTime === slot;
+              
               return (
                 <button
                   key={slot}
                   onClick={() => setSelectedTime(slot)}
                   disabled={status === "full"}
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all duration-300 ${selectedTime === slot
-                    ? "border-orange-500 bg-orange-100 text-orange-700"
-                    : status === "full"
-                      ? "border-red-300 bg-red-100 text-red-500 cursor-not-allowed opacity-60"
-                      : "border-gray-300 hover:border-orange-400 hover:bg-orange-50"
-                    }`}
+                  className={`relative p-4 rounded-2xl border-2 transition-all duration-300 text-left flex flex-col group ${
+                    isSelected
+                      ? "border-orange-500 bg-orange-50 shadow-md ring-2 ring-orange-200 ring-offset-1"
+                      : status === "full"
+                        ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
+                        : "border-gray-100 bg-white hover:border-orange-300 hover:shadow-sm"
+                  }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span>{slot}</span>
-                    <div
-                      className={`w-2 h-2 rounded-full ${getSlotColor(status)}`}
-                    ></div>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <Clock size={14} className={isSelected ? "text-orange-600" : "text-gray-400"} />
+                      <span className={`font-bold ${isSelected ? "text-orange-900" : "text-gray-700"}`}>
+                        {formatTimeRange(slot)}
+                      </span>
+                    </div>
+                    <div className={`w-2 h-2 rounded-full ${getSlotColor(status)} shadow-sm`}></div>
                   </div>
-                  <div className="text-xs mt-1 text-gray-500">
-                    {available}/100 left
+                  
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? "text-orange-600" : "text-gray-400"}`}>
+                      Available Capacity
+                    </span>
+                    <span className={`text-xs font-black ${isSelected ? "text-orange-700" : "text-gray-600"}`}>
+                      {available} / 100
+                    </span>
                   </div>
+
+                  {/* Selection Indicator */}
+                  {isSelected && (
+                    <div className="absolute -top-2 -right-2 bg-orange-600 text-white rounded-full p-1 shadow-lg">
+                      <CheckCircle size={14} />
+                    </div>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
+        <div className="mb-6">
+          <label className="block text-gray-700 font-semibold mb-3">
+            Select Category
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {Object.entries(categories).map(([key, cat]) => {
+              const isAccessible = selectedCategory === key;
+              return (
+                <button
+                  key={key}
+                  disabled={!isAccessible}
+                  onClick={() => setSelectedCategory(key)}
+                  className={`p-3 rounded-xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === key
+                      ? "border-orange-500 bg-orange-50 text-orange-700 shadow-sm"
+                      : "border-gray-100 bg-gray-50 text-gray-300 opacity-50 cursor-not-allowed"
+                    }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{cat.label}</span>
+                    {isAccessible && <CheckCircle size={10} className="text-orange-500" />}
+                  </div>
+                  <span className="text-[10px] opacity-70">Limit: {cat.limit}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[10px] text-gray-400 italic">
+            * Category auto-selected based on your profile authorization.
+          </p>
+        </div>
+
         <div className="mb-8">
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-            Number of Tickets
+            Number of {categories[selectedCategory].label}s
           </label>
           <div className="relative group/select">
             <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/select:text-orange-500 transition-colors" size={20} />
@@ -338,7 +435,7 @@ const DivyaYatraBooking = () => {
             >
               {[...Array(10).keys()].map((num) => (
                 <option key={num + 1} value={num + 1}>
-                  {num + 1} Ticket{num > 0 ? "s" : ""}
+                  {num + 1} {categories[selectedCategory].label}{num > 0 ? "s" : ""}
                 </option>
               ))}
             </select>
@@ -370,37 +467,86 @@ const DivyaYatraBooking = () => {
             Today's Availability
           </h2>
         </div>
-        <div className="space-y-3 max-h-96 overflow-y-auto">
+        <div className="space-y-6 max-h-[600px] overflow-y-auto pr-3 custom-scrollbar">
           {timeSlots.map((slot) => {
             const capacity = timeSlotCapacity[slot];
-            const booked = capacity?.booked || 0;
-            const available = (capacity?.maxCapacity || 100) - booked;
-            const percentage = (booked / (capacity?.maxCapacity || 100)) * 100;
+            if (!capacity) return null;
+            const totalBooked = Object.values(capacity.booked).reduce((a, b) => a + b, 0);
+            const totalAvailable = capacity.maxCapacity - totalBooked;
+            
             return (
               <div
                 key={slot}
-                className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors"
+                className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
               >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-semibold text-gray-700">{slot}</span>
-                  <span className="text-sm text-gray-600">
-                    {available}/100 available
-                  </span>
+                {/* Slot Header */}
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
+                    <span className="font-black text-gray-900 text-lg">{formatTimeRange(slot)}</span>
+                  </div>
+                  <div className="bg-orange-50 px-3 py-1 rounded-full">
+                    <span className="text-xs font-bold text-orange-600">
+                      {totalAvailable} / {capacity.maxCapacity} Seats Available
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-500 ${percentage === 100
-                      ? "bg-red-500"
-                      : percentage > 80
-                        ? "bg-yellow-500"
-                        : "bg-green-500"
-                      }`}
-                    style={{ width: `${percentage}%` }}
-                  ></div>
+                
+                {/* Individual Category Row */}
+                <div className="space-y-4">
+                  {Object.entries(categories).map(([key, cat]) => {
+                    const booked = capacity.booked[key] || 0;
+                    const left = cat.limit - booked;
+                    const percentage = (booked / cat.limit) * 100;
+                    
+                    return (
+                      <div key={key} className="group/cat">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter w-14">
+                              {cat.label}
+                            </span>
+                            <span className="text-xs font-bold text-gray-700">
+                              {left} <span className="text-[10px] text-gray-400 font-normal">left</span>
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400">
+                            {booked}/{cat.limit}
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-50">
+                          <div 
+                            className={`h-full transition-all duration-1000 ease-out rounded-full ${
+                              percentage >= 100 ? 'bg-red-500' : 
+                              percentage > 80 ? 'bg-orange-400' :
+                              percentage > 50 ? 'bg-blue-400' : 'bg-emerald-400'
+                            }`}
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
+        </div>
+        
+        {/* Availability Legend */}
+        <div className="mt-6 flex flex-wrap gap-3 justify-center pt-6 border-t border-gray-100">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">Available</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">Filling</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-red-400"></div>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">Full</span>
+          </div>
         </div>
       </div>
     </div>
@@ -447,8 +593,11 @@ const DivyaYatraBooking = () => {
                   {/* Header */}
                   <div className="flex justify-between items-start mb-4 md:mb-6">
                     <div>
-                      <span className="inline-block px-2 py-0.5 md:px-3 md:py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 md:mb-2">
+                      <span className="inline-block px-2 py-0.5 md:px-3 md:py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 md:mb-2 mr-2">
                         Confirmed Entry
+                      </span>
+                      <span className={`inline-block px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 md:mb-2 ${ticket.category === 'vip' ? 'bg-purple-100 text-purple-700' : ticket.category === 'elderly' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {ticket.category || 'Normal'}
                       </span>
                       <h3 className="text-lg md:text-3xl font-black text-gray-900 leading-tight">
                         Mahakaleshwar<span className="hidden md:inline"><br /></span> <span className="text-orange-600">Jyotirlinga</span>
@@ -478,9 +627,9 @@ const DivyaYatraBooking = () => {
                     <div className="bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg md:rounded-none">
                       <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 mb-0.5 md:mb-1">
                         <Clock size={12} className="md:w-3.5 md:h-3.5" />
-                        <span className="text-[10px] md:text-xs font-bold uppercase">Time</span>
+                        <span className="text-[10px] md:text-xs font-bold uppercase">Time Range</span>
                       </div>
-                      <p className="font-bold text-gray-900 text-sm md:text-lg">{ticket.time}</p>
+                      <p className="font-bold text-gray-900 text-sm md:text-lg">{formatTimeRange(ticket.time)}</p>
                     </div>
                     <div className="bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg md:rounded-none">
                       <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 mb-0.5 md:mb-1">
@@ -678,13 +827,29 @@ const DivyaYatraBooking = () => {
                 />
               </div>
 
-              <div className="bg-orange-50 p-4 rounded-lg mt-6">
-                <h4 className="font-semibold text-gray-800 mb-2">
+              <div className="bg-orange-50 p-4 rounded-xl mt-6 border border-orange-100">
+                <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <TicketIcon size={16} className="text-orange-600" />
                   Booking Summary
                 </h4>
-                <p className="text-sm text-gray-600">Date: {selectedDate}</p>
-                <p className="text-sm text-gray-600">Time: {selectedTime}</p>
-                <p className="text-sm text-gray-600">Tickets: {ticketCount}</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Date</span>
+                    <span className="font-bold text-gray-800">{selectedDate}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Reserved Slot</span>
+                    <span className="font-bold text-gray-800">{formatTimeRange(selectedTime)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Category</span>
+                    <span className="font-bold text-orange-600">{categories[selectedCategory].label}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2 border-t border-orange-200">
+                    <span className="text-gray-500">Total Devotees</span>
+                    <span className="font-black text-gray-900">{ticketCount}</span>
+                  </div>
+                </div>
               </div>
 
               <div className="flex space-x-4 mt-6">

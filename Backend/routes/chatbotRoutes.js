@@ -2,6 +2,7 @@ import express from "express";
 import { genkit } from "genkit";
 import { googleAI } from "@genkit-ai/google-genai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from "axios";
 import wav from "wav";
 import { z } from "zod";
 import { spawn } from "child_process";
@@ -16,7 +17,7 @@ const router = express.Router();
 // ── Genkit AI initialisation (for chat & TTS) ────────────────────────────────
 const ai = genkit({
   plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
-  model: "googleai/gemini-1.5-flash",
+  model: "googleai/gemini-2.5-flash",
 });
 
 // ── Direct Google AI SDK (for itinerary - more reliable JSON output) ─────────
@@ -33,6 +34,71 @@ function toWav(pcmData, channels = 1, rate = 24000, sampleWidth = 2) {
     writer.write(pcmData);
     writer.end();
   });
+}
+
+// ── SerpAPI: fetch real hotels for a destination ─────────────────────────────
+async function fetchRealHotels(destination, checkIn, checkOut, budget) {
+  try {
+    const res = await axios.get("https://serpapi.com/search.json", {
+      params: {
+        engine: "google_hotels",
+        q: `Hotels in ${destination}`,
+        check_in_date: checkIn,
+        check_out_date: checkOut,
+        adults: 2,
+        currency: "INR",
+        hl: "en",
+        gl: "in",
+        api_key: process.env.SERP_API_KEY,
+      },
+      timeout: 8000,
+    });
+
+    const properties = res.data.properties || [];
+
+    // Sort by budget preference
+    let sorted = [...properties];
+    const budgetLower = (budget || "").toLowerCase();
+    if (budgetLower.includes("budget") || budgetLower.includes("modest")) {
+      sorted.sort((a, b) => (a.rate_per_night?.extracted_lowest || 99999) - (b.rate_per_night?.extracted_lowest || 99999));
+    } else if (budgetLower.includes("luxury")) {
+      sorted.sort((a, b) => (b.rate_per_night?.extracted_lowest || 0) - (a.rate_per_night?.extracted_lowest || 0));
+    }
+
+    return sorted.slice(0, 6).map(h => ({
+      name: h.name,
+      rating: h.overall_rating ? `${h.overall_rating}/5 (${h.reviews || 0} reviews)` : "Not rated",
+      pricePerNight: h.rate_per_night?.lowest || "Price on request",
+      type: h.type || "hotel",
+    }));
+  } catch (err) {
+    console.warn("[SerpAPI] Hotels fetch failed:", err.message);
+    return [];
+  }
+}
+
+// ── SerpAPI: fetch real transport options ────────────────────────────────────
+async function fetchRealTransport(origin, destination) {
+  try {
+    const res = await axios.get("https://serpapi.com/search.json", {
+      params: {
+        engine: "google",
+        q: `trains buses from ${origin} to ${destination} schedule timings India`,
+        gl: "in",
+        hl: "en",
+        api_key: process.env.SERP_API_KEY,
+      },
+      timeout: 8000,
+    });
+
+    const organic = res.data.organic_results || [];
+    return organic.slice(0, 5).map(r =>
+      `${r.title}: ${(r.snippet || "").slice(0, 150)}`
+    );
+  } catch (err) {
+    console.warn("[SerpAPI] Transport fetch failed:", err.message);
+    return [];
+  }
 }
 
 // ── POST /api/v1/chatbot/chat ────────────────────────────────────────────────
@@ -90,7 +156,6 @@ Always respond in the language specified by the user: ${language}.
 
 If you have all the information, summarize it for the user and populate the itineraryInput JSON in your response with the collected details, and state that you are now generating the itinerary. Do not ask for confirmation.`;
 
-    // Build messages for Genkit
     const messages = history.map((m) => ({
       role: m.role === "model" ? "model" : "user",
       content: [{ text: m.content }],
@@ -130,14 +195,36 @@ If you have all the information, summarize it for the user and populate the itin
 // ── POST /api/v1/chatbot/itinerary ───────────────────────────────────────────
 router.post("/itinerary", async (req, res) => {
   try {
-    const { origin, destination, departureDate, arrivalDate, numberOfPeople, budget, style, language = "English" } = req.body;
+    const {
+      origin, destination, departureDate, arrivalDate,
+      numberOfPeople, budget, style, language = "English"
+    } = req.body;
 
     if (!origin || !destination || !departureDate || !arrivalDate) {
       return res.status(400).json({ error: "origin, destination, departureDate, and arrivalDate are required" });
     }
 
-    const prompt = `You are a travel agent specializing in creating personalized pilgrimage itineraries.
-Generate a detailed travel itinerary as a valid JSON object only — no extra text, no markdown, no code fences.
+    // ── Fetch real-world data from SerpAPI in parallel ──────────────────────
+    console.log(`[SerpAPI] Fetching hotels in ${destination} and transport from ${origin}...`);
+    const [hotels, transportSnippets] = await Promise.all([
+      fetchRealHotels(destination, departureDate, arrivalDate, budget),
+      fetchRealTransport(origin, destination),
+    ]);
+    console.log(`[SerpAPI] Got ${hotels.length} hotels, ${transportSnippets.length} transport snippets`);
+
+    // Build context blocks to inject into the AI prompt
+    const hotelContext = hotels.length > 0
+      ? `\nREAL HOTELS available in ${destination} — use these EXACT names in every accommodation field (rotate day by day if stay is long):\n` +
+        hotels.map((h, i) => `  ${i + 1}. "${h.name}" | Rating: ${h.rating} | Price: ${h.pricePerNight}/night | Type: ${h.type}`).join("\n")
+      : "";
+
+    const transportContext = transportSnippets.length > 0
+      ? `\nREAL TRANSPORT INFO from ${origin} to ${destination} — extract and use actual train/bus names, numbers, and timings where mentioned:\n` +
+        transportSnippets.map(s => `  - ${s}`).join("\n")
+      : "";
+
+    const prompt = `You are a travel agent specializing in creating detailed pilgrimage itineraries for Indian destinations.
+Generate a comprehensive travel itinerary as a valid JSON object ONLY — no extra text, no markdown, no code fences.
 
 User details:
 - Origin: ${origin}
@@ -149,53 +236,57 @@ User details:
 - Style: ${style || "Peaceful"}
 
 All text in the response (except keys) should be in: ${language}.
+${hotelContext}
+${transportContext}
 
-The JSON must include:
-1. "destination_history": A rich historical and spiritual overview of Ujjain.
-2. "train_connectivity": Real-world train options from ${origin} to Ujjain.
-3. "recommended_hotels": A list of 3-5 hotels or dharamshalas in Ujjain within the ${budget} range.
-4. "daily_plan": A day-by-day activity list.
+STRICT INSTRUCTIONS:
+1. Use the EXACT hotel names from the list above in every "accommodation.name" field. Do NOT invent hotel names.
+2. For transportation on Day 1 (travel day), include the actual train or bus name/number from the transport info above (e.g., "12919 Malwa Express", "Intercity Express").
+3. Include specific temple names, ghat names, and real landmark names of ${destination} in activities (e.g., "Mahakaleshwar Jyotirlinga darshan", "Ram Ghat Aarti").
+4. For subsequent days, use autos/e-rickshaws/local transport with realistic pricing.
+5. accommodation.price should match the real price from the hotel list.
+6. accommodation.rating should match the real rating from the hotel list.
+7. Do NOT use generic names like "Local Hotel" or "Hotel ABC".
+8. Include a detailed "destination_history" section.
+9. Populate "train_connectivity" with factual details from transport info.
+10. Populate "recommended_hotels" using the top 3 hotels from the real hotel list.
 
 Return ONLY this JSON structure exactly:
 {
   "itinerary": {
     "title": "string",
     "destination": "string",
-    "destination_history": "string (detailed)",
+    "destination_history": "string (rich historical overview)",
     "train_connectivity": [{ "train_name": "string", "frequency": "string", "travel_time": "string" }],
-    "recommended_hotels": [{ "name": "string", "type": "string (Hotel/Dharamshala)", "price_range": "string" }],
+    "recommended_hotels": [{ "name": "string", "type": "string", "price_range": "string" }],
     "departureDate": "string",
     "arrivalDate": "string",
     "numberOfPeople": number,
     "budget": "string",
     "style": "string",
     "total_estimated_cost": "string",
-    "notes": "string",
+    "notes": "string — practical tips for pilgrims visiting ${destination}",
     "daily_plan": [
       {
         "day": 1,
-        "activities": ["string"],
+        "activities": ["Specific real activity with actual place names"],
         "estimated_cost": "string",
-        "accommodation": { "name": "string", "price": "string" },
-        "transportation_options": [{ "mode": "string", "details": "string", "price": "string" }]
+        "accommodation": { "name": "EXACT hotel name from list above", "price": "real price from list", "rating": "real rating from list" },
+        "transportation_options": [{ "mode": "Train/Bus/Auto/E-Rickshaw", "details": "Real train name + number + timing if known", "price": "string" }]
       }
     ]
   }
 }`;
 
-    // Use direct Google AI SDK for reliable JSON output
+    // ── Call Gemini ──────────────────────────────────────────────────────────
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
-    });
-
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    // Parse the JSON response
+    // ── Parse JSON response ──────────────────────────────────────────────────
     let parsed;
     try {
-      // Strip any accidental markdown code fences
       const clean = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
       parsed = JSON.parse(clean);
     } catch (parseErr) {
@@ -219,31 +310,32 @@ router.post("/tts", async (req, res) => {
       return res.json({ data: { media: "" } });
     }
 
-    const langCode = language === "Hindi" ? "hi" : "en";
-    const tmpFile = path.join(os.tmpdir(), `tts_${Date.now()}.mp3`);
-    const scriptPath = path.join(__dirname, "..", "AI_Core", "tts_engine.py");
+    const voiceName = language === "Hindi" ? "Achernar" : "Algenib";
 
-    const python = spawn("py", [scriptPath, text, langCode, tmpFile]);
-
-    let output = "";
-    let error = "";
-
-    python.stdout.on("data", (data) => { output += data.toString(); });
-    python.stderr.on("data", (data) => { error += data.toString(); });
-
-    python.on("close", (code) => {
-      if (code !== 0) {
-        console.error("TTS Python Error:", error);
-        return res.json({ data: { media: "" }, warning: error });
-      }
-      res.json({ data: { media: output.trim() } });
-
-      // Cleanup temp file after a delay
-      setTimeout(() => {
-        try { if (os.existsSync(tmpFile)) os.unlinkSync(tmpFile); } catch (e) { }
-      }, 5000);
+    const { media } = await ai.generate({
+      model: "googleai/gemini-2.5-flash",
+      config: {
+        responseModalities: ["AUDIO"],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName },
+          },
+        },
+      },
+      prompt: text,
     });
 
+    if (!media || !media.url) {
+      throw new Error("No media returned from TTS model");
+    }
+
+    const audioBuffer = Buffer.from(
+      media.url.substring(media.url.indexOf(",") + 1),
+      "base64"
+    );
+    const wavBase64 = await toWav(audioBuffer);
+
+    return res.json({ data: { media: `data:audio/wav;base64,${wavBase64}` } });
   } catch (err) {
     console.error("Chatbot /tts server error:", err);
     return res.json({ data: { media: "" }, warning: err.message });

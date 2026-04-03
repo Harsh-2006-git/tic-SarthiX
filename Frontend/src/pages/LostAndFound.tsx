@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   Search,
   MapPin,
@@ -42,6 +44,8 @@ interface ZoneHistory {
   enter_time: string;
   leave_time: string | null;
   duration_spent: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface LocationTrackingData {
@@ -70,6 +74,11 @@ const LostAndFound: React.FC = () => {
   const [locationHistory, setLocationHistory] = useState<LocationTrackingData | null>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
+
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+  const polylineRef = useRef<L.Polyline | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
 
   const BASE_URL = "http://localhost:3001/api/v1";
 
@@ -109,6 +118,7 @@ const LostAndFound: React.FC = () => {
 
       if (trackingMode === "own" && token) {
         config.headers = { Authorization: `Bearer ${token}` };
+        config.params = { type: 'self' };
       } else if (trackingMode === "other") {
         config.method = "POST";
         config.data = requestData;
@@ -119,6 +129,10 @@ const LostAndFound: React.FC = () => {
 
       const res = await axios(config);
       setLocationHistory(res.data);
+      
+      if (trackingMode === "own" && res.data.history && res.data.history.length > 0) {
+        setTimeout(() => initMap(res.data.history), 100);
+      }
     } catch (err) {
       console.error("Error fetching zone history:", err);
       setTrackingError("No location history found for this devotee.");
@@ -185,7 +199,51 @@ const LostAndFound: React.FC = () => {
     return `${hours}h ${minutes % 60}m`;
   };
 
+  const initMap = (history: ZoneHistory[]) => {
+    if (!mapRef.current) return;
+
+    if (!mapInstance.current) {
+      mapInstance.current = L.map(mapRef.current).setView([23.1765, 75.7849], 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(mapInstance.current);
+    }
+
+    // Clear old layers
+    if (polylineRef.current) polylineRef.current.remove();
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    const coords: [number, number][] = history
+      .filter(h => h.latitude && h.longitude)
+      .map(h => [h.latitude!, h.longitude!]);
+
+    if (coords.length > 0) {
+      polylineRef.current = L.polyline(coords, { color: '#f97316', weight: 5, opacity: 0.7 }).addTo(mapInstance.current);
+      
+      // Add markers for each point
+      coords.forEach((c, i) => {
+        const marker = L.circleMarker(c, {
+          radius: i === coords.length - 1 ? 8 : 4,
+          fillColor: i === coords.length - 1 ? '#ef4444' : '#f97316',
+          color: '#fff',
+          weight: 2,
+          fillOpacity: 1
+        }).addTo(mapInstance.current!);
+        
+        marker.bindPopup(`<b>Point ${i + 1}</b><br>${history[i].current_zone}<br>${history[i].enter_time}`);
+        markersRef.current.push(marker as any);
+      });
+
+      mapInstance.current.fitBounds(polylineRef.current.getBounds(), { padding: [50, 50] });
+    }
+  };
+
   const resetTrackingForm = () => {
+    if (mapInstance.current) {
+      mapInstance.current.remove();
+      mapInstance.current = null;
+    }
     setTrackingMode(null);
     setSearchInput({ email: "", phone: "" });
     setLocationHistory(null);
@@ -519,11 +577,32 @@ const LostAndFound: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-sm md:text-lg font-black uppercase tracking-tight">Zone History Result</h3>
-                      <p className="text-xs font-bold text-slate-400">Visitor ID: <span className="text-slate-900">#{locationHistory.client_id}</span></p>
+                      <p className="text-xs font-bold text-slate-400">Devotee Log: <span className="text-slate-900">#{locationHistory.client_id}</span></p>
                     </div>
                   </div>
                   <button onClick={resetTrackingForm} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all">New Search</button>
                 </div>
+
+                {trackingMode === "own" && (
+                  <div className="bg-white rounded-[2.5rem] p-3 shadow-xl border border-gray-100 mb-8 overflow-hidden transform transition-all hover:shadow-2xl">
+                    <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 min-w-[40px] h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-orange-600/20">
+                          <MapPin size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none mb-1">Visual Breadcrumb Path</h3>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time GPS Coordinate Movement</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-[9px] font-black uppercase text-green-600 tracking-widest">Map Active</span>
+                      </div>
+                    </div>
+                    <div ref={mapRef} className="w-full h-[400px] rounded-[1.5rem] z-0 overflow-hidden shadow-inner border border-gray-50" />
+                  </div>
+                )}
 
                 <div className="space-y-6">
                   {locationHistory.history.length === 0 ? (

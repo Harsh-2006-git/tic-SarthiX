@@ -378,8 +378,8 @@ const Header = () => {
                                             key={lang.code}
                                             onClick={() => changeLanguage(lang)}
                                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:bg-orange-50 ${activeLang.code === lang.code
-                                                    ? 'bg-orange-50 text-orange-600'
-                                                    : 'text-slate-700'
+                                                ? 'bg-orange-50 text-orange-600'
+                                                : 'text-slate-700'
                                                 }`}
                                         >
                                             <span className="text-lg">{lang.flag}</span>

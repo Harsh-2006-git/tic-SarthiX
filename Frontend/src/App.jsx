@@ -71,9 +71,9 @@ function App() {
         />
         <Route path="/live-darshan" element={<LiveDarshan />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/lostFound" element={<LostAndFound />} />
+        <Route path="/lost-and-found" element={<LostAndFound />} />
         <Route path="/ticket" element={<Ticket />} />
-        <Route path="/dencity" element={<Density />} />
+        <Route path="/density" element={<Density />} />
         <Route path="/crowd-detection" element={<CrowdDetector />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/admin" element={<AdminPage />} />

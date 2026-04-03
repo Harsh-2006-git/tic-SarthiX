@@ -133,6 +133,7 @@ const HomePage2 = () => {
         "Book your yatra tickets with priority allocation and time slots",
       icon: <Ticket className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
       features: ["Time-slot booking", "VIP priority", "Real-time availability"],
+      link: "/ticket"
     },
     {
       title: "Urban Mobility & Planning",
@@ -143,6 +144,7 @@ const HomePage2 = () => {
         "Smart Alerts & Notifications",
         "RFID-based Entry & Exit",
       ],
+      link: "/density"
     },
     {
       title: "Routes & Maps",
@@ -154,6 +156,7 @@ const HomePage2 = () => {
         "Parking info",
         "Shortest path guidance",
       ],
+      link: "/map"
     },
     {
       title: "Crowd Detection & Alerts",
@@ -164,6 +167,7 @@ const HomePage2 = () => {
         "Density alerts",
         "Prevent overcrowding",
       ],
+      link: "/crowd-detection"
     },
     {
       title: "Live Darshan",
@@ -174,6 +178,7 @@ const HomePage2 = () => {
         "24/7 streaming",
         "Mobile-friendly access",
       ],
+      link: "/live-darshan"
     },
     {
       title: "AI-based Lost & Found",
@@ -181,6 +186,7 @@ const HomePage2 = () => {
         "Locate lost items with AI-powered tracking and notifications",
       icon: <Search className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
       features: ["Item registration", "AI image matching", "Real-time alerts"],
+      link: "/lost-and-found"
     },
   ];
 
@@ -346,7 +352,8 @@ const HomePage2 = () => {
             {services.map((service, index) => (
               <div
                 key={service.title}
-                className="group relative bg-white rounded-xl md:rounded-3xl p-3 md:p-6 border border-orange-100 shadow-sm transition-all duration-300 cursor-default flex flex-col"
+                onClick={() => handleNavigation(service.link)}
+                className="group relative bg-white rounded-xl md:rounded-3xl p-3 md:p-6 border border-orange-100 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col hover:-translate-y-1"
               >
                 <div className="flex flex-col md:flex-row items-start gap-3 md:gap-5 mb-3 md:mb-5 font-sans">
                   <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-3xl flex-shrink-0 shadow-inner">
@@ -440,7 +447,7 @@ const HomePage2 = () => {
           </div>
         </section>
 
-        {/* ── HACKATHON IMPACT SECTION ──
+        {/* ── HACKATHON IMPACT SECTION ── */}
         <section id="about" className="mb-12 lg:mb-20">
           <div className="text-center mb-12 lg:mb-20">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 border border-orange-200 mb-6">
@@ -509,7 +516,7 @@ const HomePage2 = () => {
               </div>
             </div>
           </div>
-        </section> */}
+        </section>
       </main >
 
       <Footer />

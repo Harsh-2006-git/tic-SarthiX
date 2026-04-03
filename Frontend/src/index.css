@@ -111,5 +111,46 @@ body {
   flex: 1;
 }
 
-/* Include all your existing auth styles here */
-/* ... */
+/* Google Translate - hide all UI artifacts, allow natural body offset */
+.goog-te-gadget {
+  font-family: inherit !important;
+  font-size: 0 !important;
+  color: transparent !important;
+}
+.goog-te-gadget .goog-te-combo {
+  font-family: inherit !important;
+  font-size: 11px !important;
+  font-weight: 800;
+  color: #ea580c;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid #fed7aa;
+  background-color: white;
+  outline: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 !important;
+}
+.goog-te-gadget .goog-te-combo:hover {
+  border-color: #f97316;
+  background-color: #fffaf5;
+}
+
+/* Hide Google Translate DOM artifacts (banner is handled by JS) */
+.goog-logo-link,
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.VIpgJd-Zvi9od-aZ2wEe-wOHMyf,
+.VIpgJd-Zvi9od-aZ2wEe-wOHMyf-ti6hGc {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Remove highlight box on translated text */
+font {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}

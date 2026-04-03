@@ -175,7 +175,7 @@ router.post("/tts", async (req, res) => {
     const voiceName = language === "Hindi" ? "Achernar" : "Algenib";
 
     const { media } = await ai.generate({
-      model: googleAI.model("gemini-2.5-flash-preview-tts"),
+      model: "googleai/gemini-1.5-flash-latest",
       config: {
         responseModalities: ["AUDIO"],
         speechConfig: {

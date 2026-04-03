@@ -103,9 +103,9 @@ const Footer = () => {
 
                         <div className="space-y-5 w-full">
                             {[
-                                { icon: Phone, text: "+91 98765 43210", sub: "24/7 Helpline" },
-                                { icon: Mail, text: "care@divyayatra.com", sub: "Support Mail" },
-                                { icon: MapPin, text: "Grand Mahakal Marg", sub: "Ujjain, India" }
+                                { icon: Phone, text: "+91 8305721431", sub: "24/7 Helpline" },
+                                { icon: Mail, text: "harshmanmode79@gmail.com", sub: "Support Mail" },
+                                { icon: MapPin, text: "Mahakaleshwar temple", sub: "Ujjain, India" }
                             ].map((item, i) => (
                                 <div key={i} className="flex items-center gap-4 text-gray-300 group justify-center md:justify-start cursor-default">
                                     <div className="w-10 h-10 rounded-2xl bg-white/[0.03] flex items-center justify-center border border-white/5 group-hover:border-orange-500 transition-colors">

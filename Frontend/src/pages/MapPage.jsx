@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MapPin, Compass, Search, LocateFixed, Layers, Info, Sparkles, TrendingUp, Anchor, Trash2 } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
 // Full Temple Data from HTML
 const temples = [
@@ -123,9 +126,6 @@ const MapPage = () => {
     const [searchInput, setSearchInput] = useState("");
 
     useEffect(() => {
-        if (!window.L) return;
-
-        const L = window.L;
         const initialCenter = [23.1765, 75.7849];
         const map = L.map(mapRef.current, { zoomControl: false }).setView(initialCenter, 13);
         mapInstance.current = map;
@@ -178,8 +178,7 @@ const MapPage = () => {
     }, []);
 
     const setManualPosition = (lat, lng, name) => {
-        if (!window.L || !mapInstance.current) return;
-        const L = window.L;
+        if (!mapInstance.current) return;
 
         if (window.userMarker) mapInstance.current.removeLayer(window.userMarker);
 
@@ -198,6 +197,11 @@ const MapPage = () => {
     };
 
     const showRouteToTemple = (index) => {
+        if (!mapInstance.current) {
+            setStatusMessage("⚠️ Map is initializing, please try again in a moment.");
+            return;
+        }
+
         if (!userLocation && !window.userMarker) {
             setStatusMessage("⚠️ Please set your starting location first.");
             const target = document.getElementById('location-intelligence');
@@ -207,10 +211,14 @@ const MapPage = () => {
 
         const currentPos = userLocation || { lat: window.userMarker.getLatLng().lat, lng: window.userMarker.getLatLng().lng };
         const temple = temples[index];
-        const L = window.L;
 
         if (routingControlRef.current) {
             mapInstance.current.removeControl(routingControlRef.current);
+        }
+
+        if (!L.Routing || !L.Routing.control) {
+            setStatusMessage("⚠️ Routing service is unavailable. Please refresh the page.");
+            return;
         }
 
         routingControlRef.current = L.Routing.control({

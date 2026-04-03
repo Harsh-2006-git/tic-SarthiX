@@ -57,6 +57,8 @@ const HomePage2 = () => {
     imagesRef.current = imgs;
   }, []);
 
+
+
   useEffect(() => {
     if (!imagesPreloaded) return;
     const canvas = canvasRef.current;
@@ -96,6 +98,9 @@ const HomePage2 = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [imagesPreloaded]);
+
+
+
 
   const handleNavigation = (target) => {
     console.log("Home: Navigating to", target);
@@ -184,6 +189,8 @@ const HomePage2 = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 text-gray-800 leading-relaxed font-sans">
       <Header />
 
+
+
       {/* Hero Section with Scroll Animation */}
       <section ref={heroContainerRef} className="relative w-full h-[250vh] mt-[80px] bg-transparent">
         <div className="sticky top-[72px] h-[calc(100vh-72px)] w-full flex items-center justify-center lg:justify-start text-white overflow-hidden bg-[#fafafa]">
@@ -218,7 +225,7 @@ const HomePage2 = () => {
           <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 xl:px-16 mt-8 lg:mt-16">
             <div className="flex flex-col lg:flex-row justify-between items-center w-full">
               <div className="text-center lg:text-left animate-fadeInUp max-w-xl">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black mb-3 drop-shadow-2xl bg-gradient-to-r from-white via-orange-100 to-orange-200 bg-clip-text text-transparent leading-[1.15] tracking-tight whitespace-nowrap">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black mb-1 drop-shadow-2xl bg-gradient-to-r from-white via-orange-100 to-orange-200 bg-clip-text text-transparent leading-[1.2] tracking-tight whitespace-nowrap py-2">
                   Welcome to Divya Yatra
                 </h1>
                 <p className="text-base md:text-lg lg:text-xl mb-4 drop-shadow-lg font-semibold text-orange-100">
@@ -255,7 +262,7 @@ const HomePage2 = () => {
                     </div>
                     <div className="flex flex-col items-center mt-3 md:mt-4 z-30">
                       <div className="w-6 md:w-8 h-1 bg-gradient-to-r from-orange-400 to-red-500 rounded-full mb-1 shadow-[0_0_10px_rgba(234,88,12,0.6)]"></div>
-                      <p className="text-[8px] md:text-[10px] lg:text-xs text-orange-100 font-bold tracking-[0.2em] uppercase whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                      <p className="text-[8px] md:text-[10px] lg:text-xs text-orange-100 font-bold tracking-[0.2em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-center">
                         Faith • Peace • Devotion
                       </p>
                     </div>
@@ -285,48 +292,48 @@ const HomePage2 = () => {
         <div className="max-w-5xl mx-auto px-4">
           <div className="bg-white/90 backdrop-blur-3xl border border-orange-100 rounded-[2.5rem] shadow-[0_20px_50px_-10px_rgba(234,88,12,0.15)] p-3 md:p-4 flex flex-col md:flex-row items-center gap-4 hover:shadow-[0_30px_70px_-15px_rgba(234,88,12,0.25)] transition-all duration-500">
             <div className="px-6 py-2 border-r border-orange-100 hidden lg:flex flex-col items-center">
-              <Zap className="text-orange-400 mb-1" size={20} />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Hub</span>
+              <Zap className="text-orange-500 mb-1" size={20} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">Quick Find</span>
             </div>
-            
+
             <div className="flex-1 w-full grid grid-cols-5 gap-2 md:gap-6 px-2">
               {[
-                { id: 'temple', label: 'Mandir', icon: <Milestone size={20} />, color: 'bg-pink-400', aura: 'bg-pink-400/5' },
-                { id: 'restaurant', label: 'Food', icon: <Utensils size={20} />, color: 'bg-amber-400', aura: 'bg-amber-400/5' },
-                { id: 'hospital', label: 'Medical', icon: <Hospital size={20} />, color: 'bg-red-400', aura: 'bg-red-400/5' },
-                { id: 'police', label: 'Police', icon: <Shield size={20} />, color: 'bg-blue-500', aura: 'bg-blue-500/5' },
-                { id: 'hotel', label: 'Stay', icon: <Hotel size={20} />, color: 'bg-purple-500', aura: 'bg-purple-500/5' },
+                { id: 'temple', label: 'Mandir', icon: <Milestone size={20} />, color: 'bg-pink-500', aura: 'bg-pink-500/10' },
+                { id: 'restaurant', label: 'Food', icon: <Utensils size={20} />, color: 'bg-amber-500', aura: 'bg-amber-500/10' },
+                { id: 'hospital', label: 'Medical', icon: <Hospital size={20} />, color: 'bg-red-500', aura: 'bg-red-500/10' },
+                { id: 'police', label: 'Police', icon: <Shield size={20} />, color: 'bg-blue-600', aura: 'bg-blue-600/10' },
+                { id: 'hotel', label: 'Stay', icon: <Hotel size={20} />, color: 'bg-purple-600', aura: 'bg-purple-600/10' },
               ].map((item) => (
                 <button
                   key={item.id}
                   onClick={() => navigate(`/nearby?category=${item.id}`)}
-                  className="group flex flex-col items-center gap-2 py-2 rounded-2xl hover:bg-orange-50/30 transition-all relative"
+                  className="group flex flex-col items-center gap-2 py-2 rounded-2xl hover:bg-orange-50/50 transition-all relative"
                 >
                   <div className={`absolute inset-0 ${item.aura} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-md`}></div>
                   <div className={`${item.color} w-10 h-10 md:w-14 md:h-14 rounded-xl shadow-lg border-2 border-white flex items-center justify-center text-white relative z-10 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110`}>
                     {item.icon}
                   </div>
-                  <span className="text-[9px] md:text-[11px] font-bold text-slate-400 tracking-tight uppercase group-hover:text-orange-500 relative z-10 transition-colors">
+                  <span className="text-[9px] md:text-[11px] font-black text-slate-800 tracking-tight uppercase group-hover:text-orange-600 relative z-10">
                     {item.label}
                   </span>
                 </button>
               ))}
             </div>
-            
+
             <div className="hidden xl:flex flex-col items-center px-8 border-l border-orange-100">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mb-1"></div>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">Live Navigation</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mb-1"></div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter whitespace-nowrap">Live Navigation</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-20">
+      <main className="max-w-7xl mx-auto px-4 lg:px-10 py-16 lg:py-24">
         {/* Services Section */}
         <section id="services" className="mb-20 relative">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+          <div className="text-center mb-16 pt-4">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent leading-tight py-2">
               Our Sacred Services
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full mb-6"></div>
@@ -339,34 +346,14 @@ const HomePage2 = () => {
             {services.map((service, index) => (
               <div
                 key={service.title}
-                className="group relative bg-white rounded-xl md:rounded-3xl p-3 md:p-6 border border-orange-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col"
-                onClick={() => {
-                  if (service.title === "Routes & Maps") {
-                    navigate("/map");
-                  }
-                  if (service.title === "Crowd Detection & Alerts") {
-                    navigate("/crowd-detection");
-                  }
-                  if (service.title === "Live Darshan") {
-                    navigate("/live-darshan");
-                  }
-                  if (service.title === "AI-based Lost & Found") {
-                    navigate("/lostFound");
-                  }
-                  if (service.title === "Priority Ticketing System") {
-                    navigate("/ticket");
-                  }
-                  if (service.title === "Urban Mobility & Planning") {
-                    navigate("/dencity");
-                  }
-                }}
+                className="group relative bg-white rounded-xl md:rounded-3xl p-3 md:p-6 border border-orange-100 shadow-sm transition-all duration-300 cursor-default flex flex-col"
               >
                 <div className="flex flex-col md:flex-row items-start gap-3 md:gap-5 mb-3 md:mb-5 font-sans">
-                  <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-3xl group-hover:scale-110 transition-transform duration-300 flex-shrink-0 shadow-inner">
+                  <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-3xl flex-shrink-0 shadow-inner">
                     {service.icon}
                   </div>
                   <div>
-                    <h3 className="text-xs md:text-xl font-bold text-slate-800 mb-1 group-hover:text-orange-600 transition-colors leading-tight">
+                    <h3 className="text-xs md:text-xl font-bold text-slate-800 mb-1 leading-tight">
                       {service.title}
                     </h3>
                     <p className="text-[10px] md:text-sm text-slate-500 line-clamp-2 leading-relaxed hidden md:block">
@@ -380,7 +367,7 @@ const HomePage2 = () => {
                     {service.features.slice(0, 3).map((feature, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs font-semibold text-slate-400 group-hover:text-slate-600 transition-colors"
+                        className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs font-semibold text-slate-400 transition-colors"
                       >
                         <div className="w-1 h-1 bg-orange-400 rounded-full flex-shrink-0"></div>
                         <span className="truncate">{feature}</span>
@@ -389,10 +376,10 @@ const HomePage2 = () => {
                   </div>
 
                   <div className="pt-2 md:pt-4 flex items-center justify-between border-t border-slate-50">
-                    <span className="text-[8px] md:text-[10px] font-black tracking-widest uppercase text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[8px] md:text-[10px] font-black tracking-widest uppercase text-orange-500 opacity-0 transition-opacity">
                       Go
                     </span>
-                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-orange-500 group-hover:text-white transition-all text-xs md:text-base">
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 transition-all text-xs md:text-base">
                       →
                     </div>
                   </div>
@@ -406,7 +393,7 @@ const HomePage2 = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center max-w-7xl mx-auto">
             {/* Left Content */}
             <div className="text-center lg:text-left space-y-3 lg:space-y-6">
-              <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+              <h2 className="text-3xl md:text-5xl font-bold py-2 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent leading-tight">
                 Virtual Experience
               </h2>
 
@@ -453,88 +440,76 @@ const HomePage2 = () => {
           </div>
         </section>
 
-        {/* About Section */}
+        {/* ── HACKATHON IMPACT SECTION ──
         <section id="about" className="mb-12 lg:mb-20">
-          <div className="text-center mb-8 lg:mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 lg:mb-6 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-              About Divya Yatra
+          <div className="text-center mb-12 lg:mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 border border-orange-200 mb-6">
+              <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse"></span>
+              <span className="text-[11px] font-black uppercase tracking-widest text-orange-700">Built For Bharat's Devotees</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black py-2 mb-2 lg:mb-4 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent tracking-tight leading-tight">
+              The Problem We Solve
             </h2>
-            <div className="w-16 h-1 lg:w-24 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full"></div>
+            <div className="w-16 h-1 lg:w-24 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full mb-6"></div>
+            <p className="text-base md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+              Over <strong className="text-orange-600">50 million pilgrims</strong> visit Ujjain annually. During Kumbh Mela, stampedes, lost devotees, zero digital infrastructure & opaque ticketing become <strong className="text-red-600">life-threatening challenges</strong>. Divya Yatra is the <strong className="text-orange-700">first unified smart platform</strong> built to protect, guide & serve every pilgrim digitally.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 lg:p-10 shadow-lg lg:shadow-xl border border-orange-100">
-              <h3 className="text-2xl lg:text-3xl font-bold mb-4 lg:mb-6 text-orange-800">
-                Our Mission
-              </h3>
-              <p className="text-sm lg:text-lg text-gray-700 leading-relaxed mb-6">
-                We are dedicated to facilitating meaningful spiritual journeys
-                to the sacred city of Ujjain. With over a decade of experience,
-                we ensure every devotee experiences the divine grace of
-                Mahakaleshwar and the rich cultural heritage of this holy city.
-              </p>
-              <div className="grid grid-cols-2 gap-4 lg:gap-6">
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold text-orange-600 mb-1 lg:mb-2">
-                    10+
-                  </div>
-                  <div className="text-xs lg:text-gray-600">Years Experience</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold text-orange-600 mb-1 lg:mb-2">
-                    50K+
-                  </div>
-                  <div className="text-xs lg:text-gray-600">Happy Pilgrims</div>
-                </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-16">
+            {[
+              { stat: '50M+', label: 'Annual Pilgrims', sub: 'At Ujjain alone', color: 'text-orange-600' },
+              { stat: '7', label: 'AI Modules', sub: 'Fully integrated', color: 'text-red-600' },
+              { stat: '360°', label: 'Virtual Darshan', sub: 'From anywhere', color: 'text-purple-600' },
+              { stat: 'Real-time', label: 'Crowd Safety', sub: 'YOLOv8 powered', color: 'text-blue-600' },
+              { stat: '2028', label: 'Simhastha Ready', sub: 'Kumbh Mela prep', color: 'text-emerald-600' },
+              { stat: '24/7', label: 'Support', sub: 'Multilingual AI', color: 'text-amber-600' },
+            ].map((item, idx) => (
+              <div key={idx} className="group bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-md hover:shadow-xl border border-orange-50 hover:border-orange-200 transition-all duration-300 hover:-translate-y-1">
+                <div className={`text-2xl md:text-3xl font-black ${item.color} mb-1`}>{item.stat}</div>
+                <div className="text-[11px] font-black text-slate-700 uppercase tracking-tight mb-1">{item.label}</div>
+                <div className="text-[9px] text-slate-400 font-semibold">{item.sub}</div>
               </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl p-6 lg:p-10 shadow-lg lg:shadow-xl">
-              <h3 className="text-2xl lg:text-3xl font-bold mb-4 lg:mb-6 text-orange-800">
-                Why Choose Us?
-              </h3>
-              <div className="space-y-3 lg:space-y-4">
-                {[
-                  "Expert knowledge of temple traditions",
-                  "Comfortable and clean accommodations",
-                  "24/7 customer support",
-                  "Authentic spiritual experiences",
-                  "Affordable and transparent pricing",
-                ].map((point, idx) => (
-                  <div key={idx} className="flex items-center gap-2 lg:gap-3">
-                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
-                    <span className="text-sm lg:text-gray-700">{point}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-        </section>
 
-        {/* Notice Section */}
-        <section className="mb-12 lg:mb-20">
-          <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 lg:p-10 text-white text-center shadow-2xl">
-            <h2 className="text-2xl lg:text-4xl font-bold mb-4 lg:mb-6">🔔 Important Updates</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 lg:p-6 text-left lg:text-center">
-                <h3 className="text-lg lg:text-xl font-bold mb-2 lg:mb-3">Simhastha Kumbh 2028</h3>
-                <p className="text-xs lg:text-base">
-                  Book early for the grand spiritual gathering. Limited
-                  accommodations available.
-                </p>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 lg:p-6 text-left lg:text-center">
-                <h3 className="text-lg lg:text-xl font-bold mb-2 lg:mb-3">
-                  Special Darshan Timings
-                </h3>
-                <p className="text-xs lg:text-base">
-                  Extended hours during Shravan month. Check our live updates
-                  for real-time information.
+          <div className="mb-12">
+            <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-[2.5rem] p-8 lg:p-12 text-center shadow-lg border border-orange-100">
+              <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 to-transparent"></div>
+              <div className="relative z-10 w-full max-w-4xl mx-auto">
+                <div className="text-orange-600 text-2xl md:text-3xl lg:text-4xl font-serif mb-4 leading-relaxed font-bold drop-shadow-sm">
+                  "आकाशे तारकं लिङ्गं पाताले हाटकेश्वरम् ।<br /> मर्त्यलोके महाकालं लिङ्गत्रय नमोऽस्तु ते ॥"
+                </div>
+                <p className="text-slate-500 text-[10px] md:text-xs tracking-widest uppercase font-bold">
+                  (In the sky is Taraka Linga, in the netherworld Hatakeshwara, and on earth Mahakala. Salutations to the three Lingas)
                 </p>
               </div>
             </div>
           </div>
-        </section>
+
+          <div className="relative overflow-hidden bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 rounded-3xl p-8 lg:p-14 text-white shadow-2xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full mb-4">
+                  <span className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Mission Mega Event</span>
+                </div>
+                <h3 className="text-3xl lg:text-5xl font-black tracking-tight py-2 mb-3">Simhastha Kumbh <span className="text-yellow-300">2028</span></h3>
+                <p className="text-white/80 text-base lg:text-lg max-w-2xl leading-relaxed">
+                  The world's largest gathering returns to Ujjain. Divya Yatra is engineered <strong className="text-white">from day one</strong> to scale — providing real-time crowd dynamics, AI emergency response, and resilient infrastructure for an estimated <strong className="text-yellow-200">100+ million devotees</strong>.
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-4 shrink-0">
+                <div className="text-6xl lg:text-8xl font-black text-white/20 leading-none select-none">2028</div>
+                <button onClick={() => navigate('/ticket')} className="px-8 py-4 bg-white text-orange-700 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-yellow-50 transition-all shadow-xl hover:shadow-2xl active:scale-95 flex items-center gap-2 group">
+                  Preview Infrastructure <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section> */}
       </main >
 
       <Footer />

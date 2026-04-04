@@ -26,10 +26,11 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import logo from "../assets/logo.png";
 
-const imageModules = import.meta.glob('../temple1/*.jpg', { eager: true });
-const imageUrls = Object.keys(imageModules)
-  .sort()
-  .map((path) => imageModules[path].default || imageModules[path]);
+// Optimize: Load image references lazily and only use every 2nd frame to reduce payload by 50%
+const imageModules = import.meta.glob('../temple1/*.jpg');
+const sortedPaths = Object.keys(imageModules).sort();
+// Use every 2nd frame for a smoother balance between performance and quality
+const filteredPaths = sortedPaths.filter((_, index) => index % 2 === 0);
 
 const HomePage2 = () => {
   const navigate = useNavigate();
@@ -41,21 +42,32 @@ const HomePage2 = () => {
 
   useEffect(() => {
     let loadedCount = 0;
+    const totalToLoad = filteredPaths.length;
     const imgs = [];
-    imageUrls.forEach((url, i) => {
-      const img = new Image();
-      img.src = url;
-      img.onload = () => {
-        loadedCount++;
-        setLoadingProgress(Math.floor((loadedCount / imageUrls.length) * 100));
-        if (loadedCount === imageUrls.length) {
-          setImagesPreloaded(true);
-        }
-      };
-      imgs[i] = img;
+
+    filteredPaths.forEach(async (path, i) => {
+      try {
+        const module = await imageModules[path]();
+        const url = module.default || module;
+        const img = new Image();
+        img.src = url;
+        img.onload = () => {
+          loadedCount++;
+          setLoadingProgress(Math.floor((loadedCount / totalToLoad) * 100));
+          if (loadedCount === totalToLoad) {
+            setImagesPreloaded(true);
+          }
+        };
+        imgs[i] = img;
+      } catch (err) {
+        console.error("Error loading image:", path, err);
+        loadedCount++; // Avoid blocking if one fails
+      }
     });
     imagesRef.current = imgs;
   }, []);
+
+  const imageUrlsCount = filteredPaths.length;
 
 
 
@@ -86,7 +98,7 @@ const HomePage2 = () => {
             if (rect.top < 0) {
               progress = Math.min(1, Math.abs(rect.top) / maxScroll);
             }
-            const maxIndex = imageUrls.length - 1;
+            const maxIndex = imageUrlsCount - 1;
             const index = Math.min(maxIndex, Math.max(0, Math.floor(progress * maxIndex)));
             renderFrame(index);
           }

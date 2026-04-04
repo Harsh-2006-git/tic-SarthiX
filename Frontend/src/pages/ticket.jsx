@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { API_V1 } from "../config/api";
 
 const DivyaYatraBooking = () => {
   const [activeTab, setActiveTab] = useState("book");
@@ -83,7 +84,7 @@ const DivyaYatraBooking = () => {
   };
 
   const API = axios.create({
-    baseURL: "http://localhost:3001/api/v1",
+    baseURL: API_V1,
   });
 
   // Get JWT token from localStorage

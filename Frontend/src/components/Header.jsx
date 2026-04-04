@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Compass, User, LogOut, MapPin, ChevronDown, Globe, CreditCard } from "lucide-react";
 import GuidePage from "../pages/guide";
 import logo from "../assets/logo.png";
+import { resolveMediaUrl } from "../config/api";
 
 const LANGUAGES = [
     { code: "en", label: "English", flag: "🇬🇧" },
@@ -229,7 +230,7 @@ const Header = () => {
                             >
                                 <div className="h-8 w-8 sm:h-11 rounded-full overflow-hidden border-2 border-orange-50 bg-orange-100 flex-shrink-0">
                                     {user?.profile_image || user?.photo ? (
-                                        <img src={user.profile_image ? (user.profile_image.startsWith('http') ? user.profile_image : `http://localhost:3001${user.profile_image}`) : user.photo} alt="Profile" className="h-full w-full object-cover" />
+                                        <img src={user.profile_image ? resolveMediaUrl(user.profile_image) : user.photo} alt="Profile" className="h-full w-full object-cover" />
                                     ) : (
                                         <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-600 text-sm sm:text-lg font-bold">
                                             {user?.name?.[0]?.toUpperCase() || "Y"}
@@ -361,7 +362,7 @@ const Header = () => {
                                 <div className="space-y-3">
                                     <button onClick={() => handleNavigation("/profile")} className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-100 shadow-sm hover:border-orange-500 transition-all text-left">
                                         <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-orange-50 bg-orange-100 flex-shrink-0">
-                                            {user?.profile_image || user?.photo ? <img src={user.profile_image ? (user.profile_image.startsWith('http') ? user.profile_image : `http://localhost:3001${user.profile_image}`) : user.photo} alt="Profile" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-600 text-sm font-bold">{user?.name?.[0]?.toUpperCase() || "Y"}</div>}
+                                            {user?.profile_image || user?.photo ? <img src={user.profile_image ? resolveMediaUrl(user.profile_image) : user.photo} alt="Profile" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-600 text-sm font-bold">{user?.name?.[0]?.toUpperCase() || "Y"}</div>}
                                         </div>
                                         <div className="min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{user?.name || "Guest"}</p><p className="text-[11px] text-slate-500">View Profile Dashboard</p></div>
                                     </button>

@@ -8,8 +8,9 @@ import {
 } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { API_V1, resolveMediaUrl } from '../config/api';
 
-const BACKEND_URL = 'http://localhost:3001/api/v1/admin';
+const BACKEND_URL = `${API_V1}/admin`;
 
 // ==================== MINI BAR CHART COMPONENT ====================
 const MiniBarChart = ({ data, label, color = '#f97316' }) => {
@@ -292,13 +293,7 @@ const AdminPage = () => {
         }
     };
 
-    const getImageUrl = (path) => {
-        if (!path) return null;
-        if (path.startsWith('http')) return path;
-        const normalized = path.startsWith('/') ? path : `/${path}`;
-        if (!normalized.startsWith('/uploads/')) return `http://localhost:3001/uploads${normalized}`;
-        return `http://localhost:3001${normalized}`;
-    };
+    const getImageUrl = (path) => resolveMediaUrl(path);
 
     const filteredUsers = users.filter(u =>
         u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||

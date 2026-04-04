@@ -3,6 +3,7 @@ import jsQR from "jsqr";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Map, ScanLine, Shield } from "lucide-react";
+import { API_V1 } from "../config/api";
 
 const Dashboard = () => {
   const [zones, setZones] = useState([]);
@@ -27,7 +28,7 @@ const Dashboard = () => {
   const handleManualTrack = async () => {
     if (!trackingSearch) return;
     try {
-      const response = await fetch("http://localhost:3001/api/v1/family/members", {
+      const response = await fetch(`${API_V1}/family/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ search: trackingSearch }) // searches by phone/email
@@ -43,7 +44,7 @@ const Dashboard = () => {
   // Fetch zone density data
   const fetchZoneData = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/v1/zone/density");
+      const response = await fetch(`${API_V1}/zone/density`);
       const data = await response.json();
       setZones(data.zones || data || []);
     } catch (error) {
@@ -55,7 +56,7 @@ const Dashboard = () => {
   const fetchFamily = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/api/v1/family/all", {
+      const res = await fetch(`${API_V1}/family/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -69,8 +70,8 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const url = memberId 
-        ? `http://localhost:3001/api/v1/zone/history?member_id=${memberId}`
-        : "http://localhost:3001/api/v1/zone/history";
+        ? `${API_V1}/zone/history?member_id=${memberId}`
+        : `${API_V1}/zone/history`;
         
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -91,7 +92,7 @@ const Dashboard = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/v1/zone/scan", {
+      const response = await fetch(`${API_V1}/zone/scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(scanData),
@@ -113,7 +114,7 @@ const Dashboard = () => {
   // Handle zone exit
   const handleZoneExit = async (unique_code) => {
     try {
-      const response = await fetch("http://localhost:3001/api/v1/zone/scan", {
+      const response = await fetch(`${API_V1}/zone/scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ unique_code }),
@@ -204,7 +205,7 @@ const Dashboard = () => {
 
   const handleAutoScan = async (data) => {
     try {
-      const response = await fetch("http://localhost:3001/api/v1/zone/scan", {
+      const response = await fetch(`${API_V1}/zone/scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -239,7 +240,7 @@ const Dashboard = () => {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(async (position) => {
           try {
-            await fetch("http://localhost:3001/api/v1/zone/record-location", {
+            await fetch(`${API_V1}/zone/record-location`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { API_V1, resolveMediaUrl } from "../config/api";
 
 interface LostItem {
   id: number;
@@ -80,7 +81,7 @@ const LostAndFound: React.FC = () => {
   const polylineRef = useRef<L.Polyline | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
 
-  const BASE_URL = "http://localhost:3001/api/v1";
+  const BASE_URL = API_V1;
 
   // Fetch lost items
   const fetchItems = async () => {
@@ -442,7 +443,7 @@ const LostAndFound: React.FC = () => {
                       <div className="relative w-full h-64 bg-slate-50 flex items-center justify-center p-2">
                         {item.image ? (
                           <img
-                            src={`http://localhost:3001/uploads/${item.image}`}
+                            src={resolveMediaUrl(`/uploads/${item.image}`)}
                             alt={item.title}
                             className="max-w-full max-h-full object-contain drop-shadow-md rounded-xl"
                           />

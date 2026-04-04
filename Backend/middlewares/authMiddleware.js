@@ -63,7 +63,45 @@ const authenticateClient = async (req, res, next) => {
         return next();
       } catch (googleErr) {
         console.error("Google verify error:", googleErr.message);
-        throw localErr; // Re-throw localErr which usually refers to an invalid token or expired
+        
+        // --- LOCAL DEV FALLBACK ---
+        // If Google's HTTPS cert verification fails locally, we gracefully decode the payload manually
+        const dbMode = (process.env.DB_MODE || "").trim();
+        console.log(`[AuthFallback] DB_MODE is: '${dbMode}'`);
+
+        if (dbMode === "local") {
+            try {
+                console.log("[AuthFallback] Attempting manual JWT decode...");
+                const decodedPayload = jwt.decode(token);
+                
+                if (decodedPayload && decodedPayload.email) {
+                    console.log(`[AuthFallback] Decoded email: ${decodedPayload.email}. Searching DB...`);
+                    const existingClient = await Client.findOne({ where: { email: decodedPayload.email } });
+                    
+                    if (existingClient) {
+                        console.log(`[AuthFallback] User found in DB. Logging in as: ${existingClient.name}`);
+                        req.user = {
+                          client_id: existingClient.client_id,
+                          phone: existingClient.phone,
+                          email: existingClient.email,
+                          userType: existingClient.userType,
+                          unique_code: existingClient.unique_code,
+                        };
+                        return next();
+                    } else {
+                        console.log(`[AuthFallback] User not in DB. Proceeding to registration.`);
+                        req.user = { firebaseOnly: true, email: decodedPayload.email, name: decodedPayload.name };
+                        return next();
+                    }
+                } else {
+                    console.log("[AuthFallback] JWT decode failed or no email found in payload.");
+                }
+            } catch (fallbackErr) {
+                console.error("[AuthFallback] Crash during fallback execution:", fallbackErr);
+            }
+        }
+        
+        return res.status(401).json({ message: "Google Auth Failed: " + googleErr.message });
       }
     }
   } catch (error) {

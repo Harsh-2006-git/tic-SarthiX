@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Video, LayoutDashboard, ShieldCheck, Activity, Upload, Play, XCircle, AlertCircle } from 'lucide-react';
+import { API_V1 } from '../config/api';
 
 const CrowdDetector = () => {
     const navigate = useNavigate();
@@ -15,7 +16,7 @@ const CrowdDetector = () => {
     const [isStarting, setIsStarting] = useState(false);
     const fileInputRef = useRef(null);
 
-    const BACKEND_URL = 'http://localhost:3001/api/v1/crowd';
+    const BACKEND_URL = `${API_V1}/crowd`;
 
     // Fetch backend status
     const updateStatus = async () => {

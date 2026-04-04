@@ -19,8 +19,9 @@ import {
     Zap
 } from "lucide-react";
 import axios from "axios";
+import { API_V1 } from "../config/api";
 
-const BACKEND_URL = "http://localhost:3001/api/v1/ai";
+const BACKEND_URL = `${API_V1}/ai`;
 
 const AIAssistant = () => {
     const [isOpen, setIsOpen] = useState(false);

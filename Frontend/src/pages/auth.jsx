@@ -20,6 +20,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
+import { API_V1 } from "../config/api";
 
 const Auth = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ const Auth = ({ setIsAuthenticated }) => {
       const idToken = credentialResponse.credential;
       const decodedUser = jwtDecode(idToken);
 
-      const response = await fetch("http://localhost:3001/api/v1/auth/profile", {
+      const response = await fetch(`${API_V1}/auth/profile`, {
         headers: { Authorization: `Bearer ${idToken}` },
       });
 
@@ -65,6 +66,9 @@ const Auth = ({ setIsAuthenticated }) => {
           email: decodedUser.email || "",
           phone: "",
           userType: "Civilian",
+          age: "",
+          adminSecret: "",
+          divyangCardId: "",
         });
         setStep("registering");
       } else {
@@ -297,7 +301,7 @@ const Auth = ({ setIsAuthenticated }) => {
 
                             setIsLoading(true);
                             try {
-                              const response = await fetch("http://localhost:3001/api/v1/auth/register", {
+                              const response = await fetch(`${API_V1}/auth/register`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ ...formData, password: 'google_auth_placeholder' }),

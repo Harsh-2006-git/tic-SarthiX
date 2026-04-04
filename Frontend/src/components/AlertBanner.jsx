@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, AlertTriangle, Info, X, Bell } from 'lucide-react';
+import { API_V1 } from '../config/api';
 
 const AlertBanner = () => {
     const [alerts, setAlerts] = useState([]);
@@ -14,7 +15,7 @@ const AlertBanner = () => {
 
     const fetchAlerts = async () => {
         try {
-            const res = await fetch('http://localhost:3001/api/v1/admin/alerts/active');
+            const res = await fetch(`${API_V1}/admin/alerts/active`);
             if (res.ok) {
                 const data = await res.json();
                 setAlerts(data);

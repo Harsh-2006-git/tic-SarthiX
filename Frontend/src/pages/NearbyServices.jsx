@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Header from '../components/Header';
+import { API_V1 } from '../config/api';
 
 // Leaflet Fixes
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -97,8 +98,7 @@ const NearbyServices = () => {
   const fetchPlaces = async () => {
     setLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await axios.get(`${apiUrl}/api/v1/nearby`, { params: { category, lat: userLocation[0], lng: userLocation[1], radius } });
+      const response = await axios.get(`${API_V1}/nearby`, { params: { category, lat: userLocation[0], lng: userLocation[1], radius } });
       setPlaces(response.data);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };

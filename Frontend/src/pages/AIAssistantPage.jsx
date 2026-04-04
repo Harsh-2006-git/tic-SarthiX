@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_V1 } from "../config/api";
 
-const BACKEND_URL = "http://localhost:3001/api/v1/ai";
+const BACKEND_URL = `${API_V1}/ai`;
 
 const AIAssistantPage = () => {
     const [activeTab, setActiveTab] = useState("general"); // general, tourism

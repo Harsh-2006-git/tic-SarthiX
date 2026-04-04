@@ -13,8 +13,9 @@ import {
     Shield
 } from "lucide-react";
 import axios from "axios";
+import { API_V1, resolveMediaUrl } from "../../config/api";
 
-const BACKEND_URL = "http://localhost:3001/api/v1";
+const BACKEND_URL = API_V1;
 
 const ListingDetails = () => {
     const { id } = useParams();
@@ -71,8 +72,7 @@ const ListingDetails = () => {
 
     const getImageUrl = (path) => {
         if (!path) return "https://images.unsplash.com/photo-1506521781263-d8422e82f27a";
-        if (path.startsWith("http")) return path;
-        return `http://localhost:3001/${path.replace(/\\/g, "/")}`;
+        return resolveMediaUrl(path);
     };
 
     if (loading) return (

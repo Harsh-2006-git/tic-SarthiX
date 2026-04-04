@@ -6,7 +6,15 @@ import { v4 as uuidv4 } from "uuid";
 
 export const register = async (req, res) => {
   try {
-    const { name, phone, email, password, userType } = req.body;
+    const { name, phone, email, password, userType, adminSecret } = req.body;
+
+    // Strict backend validation for Admin role
+    if (userType === "Admin") {
+      const EXPECTED_ADMIN_SECRET = process.env.ADMIN_SECRET || "DIVYA-ADMIN-777";
+      if (adminSecret !== EXPECTED_ADMIN_SECRET) {
+        return res.status(403).json({ message: "Invalid Admin Secret Code. Registration denied." });
+      }
+    }
 
     // check if phone already exists
     const existingPhone = await Client.findOne({ where: { phone } });

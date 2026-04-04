@@ -14,8 +14,9 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_V1, resolveMediaUrl } from "../../config/api";
 
-const BACKEND_URL = "http://localhost:3001/api/v1";
+const BACKEND_URL = API_V1;
 
 const ParkingMarketplace = () => {
     const [parkingSlots, setParkingSlots] = useState([]);
@@ -74,8 +75,7 @@ const ParkingMarketplace = () => {
 
     const getImageUrl = (path) => {
         if (!path) return "https://images.unsplash.com/photo-1506521781263-d8422e82f27a";
-        if (path.startsWith("http")) return path;
-        return `http://localhost:3001/${path.replace(/\\/g, "/")}`;
+        return resolveMediaUrl(path);
     };
 
     const calculateDistance = (lat1, lon1, lat2, lon2) => {

@@ -26,7 +26,8 @@ import {
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import logo from "../assets/logo.png"; // Assuming logo.png is added by user
+import logo from "../assets/logo.png";
+import { API_V1, resolveMediaUrl } from "../config/api";
 
 const ProfileRfidPage = () => {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ const ProfileRfidPage = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return; // Skip if no token — fetchProfile will handle redirect
-      const res = await fetch("http://localhost:3001/api/v1/family/all", {
+      const res = await fetch(`${API_V1}/family/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
@@ -78,7 +79,7 @@ const ProfileRfidPage = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/api/v1/family/add", {
+      const res = await fetch(`${API_V1}/family/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +101,7 @@ const ProfileRfidPage = () => {
   const handleRemoveFamily = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/api/v1/family/remove/${id}`, {
+      const res = await fetch(`${API_V1}/family/remove/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -120,7 +121,7 @@ const ProfileRfidPage = () => {
         return;
       }
 
-      const res = await fetch("http://localhost:3001/api/v1/auth/profile", {
+      const res = await fetch(`${API_V1}/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -176,7 +177,7 @@ const ProfileRfidPage = () => {
     setError("");
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/api/v1/zone/generate", {
+      const res = await fetch(`${API_V1}/zone/generate`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -209,7 +210,7 @@ const ProfileRfidPage = () => {
         formData.append("profile_image", profileImage);
       }
 
-      const res = await fetch("http://localhost:3001/api/v1/auth/profile", {
+      const res = await fetch(`${API_V1}/auth/profile`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -315,9 +316,9 @@ const ProfileRfidPage = () => {
                   <div className="relative group/avatar cursor-pointer">
                     <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full p-1 bg-white border-2 border-slate-100 shadow-sm transition-transform active:scale-95">
                       <div className="w-full h-full rounded-full bg-slate-50 overflow-hidden flex items-center justify-center">
-                        {previewUrl || (user.profile_image ? (user.profile_image.startsWith("http") ? user.profile_image : `http://localhost:3001${user.profile_image}`) : null) ? (
+                        {previewUrl || (user.profile_image ? resolveMediaUrl(user.profile_image) : null) ? (
                           <img
-                            src={previewUrl || (user.profile_image.startsWith("http") ? user.profile_image : `http://localhost:3001${user.profile_image}`)}
+                            src={previewUrl || resolveMediaUrl(user.profile_image)}
                             alt="Profile"
                             className="w-full h-full object-cover"
                           />

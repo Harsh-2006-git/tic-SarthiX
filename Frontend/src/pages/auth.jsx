@@ -29,6 +29,9 @@ const Auth = ({ setIsAuthenticated }) => {
     phone: "",
     email: "",
     userType: "Civilian",
+    age: "",
+    adminSecret: "",
+    divyangCardId: "",
   });
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -200,7 +203,7 @@ const Auth = ({ setIsAuthenticated }) => {
                                className="w-full bg-white border border-slate-200 focus:border-orange-400 rounded-2xl h-14 pl-14 pr-6 text-slate-800 font-bold outline-none transition-all focus:shadow-[0_0_15px_rgba(249,115,22,0.1)] placeholder:text-slate-400"
                              />
                           </div>
-                          <div className="relative group">
+                           <div className="relative group">
                              <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors" size={18} />
                              <select
                                 value={formData.userType}
@@ -208,13 +211,66 @@ const Auth = ({ setIsAuthenticated }) => {
                                 className="w-full bg-white border border-slate-200 focus:border-orange-400 rounded-2xl h-14 pl-14 pr-6 text-slate-800 font-bold outline-none transition-all appearance-none cursor-pointer"
                              >
                                 <option value="Civilian">Civilian Devotee</option>
-                                <option value="Aged">Senior Citizen / Differently Abled</option>
+                                <option value="Local">Local Resident</option>
+                                <option value="Aged">Senior Citizen (60+)</option>
+                                <option value="Child">Child (Under 12)</option>
                                 <option value="VIP">VIP Delegate</option>
+                                <option value="Divyang">Differently Abled (Divyang)</option>
                                 <option value="Sadhu">Sadhu / Saint</option>
+                                <option value="Admin">Administrator</option>
                                 <option value="ParkingOwner">Parking Owner</option>
                              </select>
                              <Globe className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={14} />
                           </div>
+
+                          {/* Conditional Fields Based on User Type */}
+                          {formData.userType === "Admin" && (
+                            <div className="relative group animate-in slide-in-from-top-2 duration-300">
+                              <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-red-400" size={18} />
+                              <input 
+                                type="password" 
+                                placeholder="Admin Secret Verification Code" 
+                                value={formData.adminSecret} 
+                                onChange={(e) => setFormData({ ...formData, adminSecret: e.target.value })} 
+                                className="w-full bg-red-50/50 border border-red-100 focus:border-red-400 rounded-2xl h-14 pl-14 pr-6 text-slate-800 font-bold outline-none transition-all placeholder:text-red-300" 
+                              />
+                            </div>
+                          )}
+
+                          {(formData.userType === "Aged" || formData.userType === "Child") && (
+                            <div className="relative group animate-in slide-in-from-top-2 duration-300">
+                              <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                              <input 
+                                type="number" 
+                                placeholder={formData.userType === "Aged" ? "Enter Age (Years)" : "Enter Child's Age"} 
+                                value={formData.age} 
+                                onChange={(e) => setFormData({ ...formData, age: e.target.value })} 
+                                className="w-full bg-white border border-slate-200 focus:border-orange-400 rounded-2xl h-14 pl-14 pr-6 text-slate-800 font-bold outline-none transition-all placeholder:text-slate-400" 
+                              />
+                            </div>
+                          )}
+
+                          {formData.userType === "Divyang" && (
+                            <div className="relative group animate-in slide-in-from-top-2 duration-300">
+                              <CreditCard className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                              <input 
+                                type="text" 
+                                placeholder="Government Divyang Card ID" 
+                                value={formData.divyangCardId} 
+                                onChange={(e) => setFormData({ ...formData, divyangCardId: e.target.value })} 
+                                className="w-full bg-white border border-slate-200 focus:border-orange-400 rounded-2xl h-14 pl-14 pr-6 text-slate-800 font-bold outline-none transition-all placeholder:text-slate-400" 
+                              />
+                            </div>
+                          )}
+
+                          {formData.userType === "VIP" && (
+                            <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+                               <ShieldCheck size={18} className="text-purple-600 mt-1 flex-shrink-0" />
+                               <p className="text-[11px] font-bold text-purple-700 leading-tight">
+                                 VIP registrations require manual verification by the Temple Board. Your access will be restricted until approved.
+                               </p>
+                            </div>
+                          )}
                         </div>
 
                         <button
@@ -224,6 +280,21 @@ const Auth = ({ setIsAuthenticated }) => {
                                setMessage("Please fill out all required fields.");
                                return;
                             }
+
+                            // Role specific validation
+                            if(formData.userType === "Admin" && !formData.adminSecret) {
+                               setMessage("Admin Secret Code is required for this role.");
+                               return;
+                            }
+                            if(formData.userType === "Divyang" && !formData.divyangCardId) {
+                               setMessage("Please provide your Government Divyang Card ID.");
+                               return;
+                            }
+                            if((formData.userType === "Aged" || formData.userType === "Child") && !formData.age) {
+                               setMessage("Age verification is required for this category.");
+                               return;
+                            }
+
                             setIsLoading(true);
                             try {
                               const response = await fetch("http://localhost:3001/api/v1/auth/register", {

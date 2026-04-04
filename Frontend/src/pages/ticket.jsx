@@ -339,7 +339,7 @@ const DivyaYatraBooking = () => {
           <label className="block text-gray-700 font-semibold mb-3">
             Select Time Slot
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-2 max-h-[300px] md:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
             {timeSlots.map((slot) => {
               const status = getSlotStatus(slot);
               const capacity = timeSlotCapacity[slot];
@@ -352,7 +352,7 @@ const DivyaYatraBooking = () => {
                   key={slot}
                   onClick={() => setSelectedTime(slot)}
                   disabled={status === "full"}
-                  className={`relative p-4 rounded-2xl border-2 transition-all duration-300 text-left flex flex-col group ${
+                  className={`relative p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all duration-300 text-left flex flex-col group ${
                     isSelected
                       ? "border-orange-500 bg-orange-50 shadow-md ring-2 ring-orange-200 ring-offset-1"
                       : status === "full"
@@ -360,29 +360,28 @@ const DivyaYatraBooking = () => {
                         : "border-gray-100 bg-white hover:border-orange-300 hover:shadow-sm"
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <Clock size={14} className={isSelected ? "text-orange-600" : "text-gray-400"} />
-                      <span className={`font-bold ${isSelected ? "text-orange-900" : "text-gray-700"}`}>
-                        {formatTimeRange(slot)}
+                  <div className="flex justify-between items-start mb-1 md:mb-2">
+                    <div className="flex items-center gap-1 md:gap-2">
+                      <Clock size={12} className={isSelected ? "text-orange-600" : "text-gray-400"} />
+                      <span className={`font-bold text-xs md:text-sm ${isSelected ? "text-orange-900" : "text-gray-700"}`}>
+                        {slot}
                       </span>
                     </div>
-                    <div className={`w-2 h-2 rounded-full ${getSlotColor(status)} shadow-sm`}></div>
+                    <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${getSlotColor(status)} shadow-sm`}></div>
                   </div>
                   
                   <div className="flex items-center justify-between mt-auto">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? "text-orange-600" : "text-gray-400"}`}>
-                      Available Capacity
+                    <span className={`text-[8px] md:text-[10px] font-bold uppercase tracking-wider ${isSelected ? "text-orange-600" : "text-gray-400"}`}>
+                      Available
                     </span>
-                    <span className={`text-xs font-black ${isSelected ? "text-orange-700" : "text-gray-600"}`}>
-                      {available} / 100
+                    <span className={`text-[10px] md:text-xs font-black ${isSelected ? "text-orange-700" : "text-gray-600"}`}>
+                      {available}
                     </span>
                   </div>
 
-                  {/* Selection Indicator */}
                   {isSelected && (
-                    <div className="absolute -top-2 -right-2 bg-orange-600 text-white rounded-full p-1 shadow-lg">
-                      <CheckCircle size={14} />
+                    <div className="absolute -top-1.5 -right-1.5 bg-orange-600 text-white rounded-full p-0.5 shadow-lg">
+                      <CheckCircle size={12} />
                     </div>
                   )}
                 </button>

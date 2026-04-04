@@ -13,6 +13,7 @@ const Dashboard = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scannerError, setScannerError] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard", "scanner", or "history"
+  const [isAlertExpanded, setIsAlertExpanded] = useState(false);
   const [trackingSearch, setTrackingSearch] = useState("");
   const [familyOptions, setFamilyOptions] = useState([]);
   const [historyData, setHistoryData] = useState([]);
@@ -134,7 +135,7 @@ const Dashboard = () => {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { willReadFrequently: true });
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -166,12 +167,17 @@ const Dashboard = () => {
       let lastScannedCode = null;
       let lastScanTime = 0;
 
-      scanInterval.current = setInterval(() => {
+      const tick = () => {
+        if (!videoRef.current || videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
+          scanInterval.current = requestAnimationFrame(tick);
+          return;
+        }
+
         const qrCode = detectQRCode();
         if (qrCode) {
           const now = Date.now();
-          // Debounce same code for 3 seconds, or allow immediate if different code
-          if (qrCode !== lastScannedCode || (now - lastScanTime > 3000)) {
+          // Faster debounce: 1.5 seconds instead of 3
+          if (qrCode !== lastScannedCode || (now - lastScanTime > 1500)) {
             lastScannedCode = qrCode;
             lastScanTime = now;
 
@@ -185,7 +191,10 @@ const Dashboard = () => {
             setScanResult({ message: `✅ QR Code detected: ${qrCode}` });
           }
         }
-      }, 500);
+        scanInterval.current = requestAnimationFrame(tick);
+      };
+
+      scanInterval.current = requestAnimationFrame(tick);
     } catch (error) {
       console.error("Error accessing camera:", error);
       setScannerError("Cannot access camera. Check permissions.");
@@ -213,7 +222,7 @@ const Dashboard = () => {
   const stopScanner = () => {
     setIsScanning(false);
     if (scanInterval.current) {
-      clearInterval(scanInterval.current);
+      cancelAnimationFrame(scanInterval.current);
       scanInterval.current = null;
     }
     if (videoRef.current && videoRef.current.srcObject) {
@@ -266,10 +275,8 @@ const Dashboard = () => {
     };
 
     loadData();
-    const intervalId = setInterval(fetchZoneData, 5000);
 
     return () => {
-      clearInterval(intervalId);
       stopScanner();
     };
   }, []);
@@ -398,24 +405,35 @@ const Dashboard = () => {
             Real-time tracking of devotee flow at Mahakaleshwar Temple.
           </p>
 
-          <div className="max-w-3xl mx-auto mb-8 animate-fade-in">
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 text-left relative overflow-hidden shadow-sm">
+          <div className="max-w-3xl mx-auto mb-8 animate-fade-in px-4 md:px-0">
+            <div 
+              className={`bg-orange-50 border border-orange-200 rounded-2xl p-4 md:p-6 text-left relative overflow-hidden shadow-sm transition-all duration-500 cursor-pointer ${isAlertExpanded ? 'max-h-[500px]' : 'max-h-[80px] md:max-h-[100px]'}`}
+              onClick={() => setIsAlertExpanded(!isAlertExpanded)}
+            >
               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100/50 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-              <div className="flex gap-4 relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 text-orange-600">
-                  <Shield size={24} />
+              <div className="flex gap-3 md:gap-4 relative z-10">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 text-orange-600 transition-transform">
+                  <Shield size={isAlertExpanded ? 24 : 20} />
                 </div>
-                <div>
-                  <h4 className="text-orange-900 font-bold mb-1">Tracking Information</h4>
-                  <p className="text-orange-800/80 text-sm leading-relaxed font-medium">
-                    You are currently being tracked by our smart platform to ensure crowd safety. 
-                    <br /><br />
-                    <span className="text-orange-900 font-bold">Want to track family?</span> If you are with family members, please either:
-                    <ul className="list-disc ml-5 mt-2 space-y-1">
-                      <li>Login from their individual accounts on their devices.</li>
-                      <li>Associate them with your account in the <strong>Profile</strong> section and use their specific QR codes for entry/exit scans.</li>
-                    </ul>
-                  </p>
+                <div className="flex-grow">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-orange-900 font-bold text-sm md:text-base mb-1">Important Tracking Info</h4>
+                    <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest bg-orange-100 px-2 py-1 rounded-md">
+                      {isAlertExpanded ? "VIEW LESS" : "TAP TO ENLARGE"}
+                    </span>
+                  </div>
+                  
+                  <div className={`transition-all duration-500 overflow-hidden ${isAlertExpanded ? 'opacity-100 mt-4' : 'opacity-0 max-h-0'}`}>
+                    <div className="text-orange-800/80 text-sm leading-relaxed font-semibold">
+                      You are currently being tracked by our smart platform to ensure crowd safety. 
+                      <br /><br />
+                      <span className="text-orange-900 font-bold">Want to track family?</span> If you are with family members, please either:
+                      <ul className="list-disc ml-5 mt-2 space-y-2">
+                        <li>Login from their individual accounts on their devices.</li>
+                        <li>Associate them with your account in the <strong>Profile</strong> section and use their specific QR codes for entry/exit scans.</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -622,11 +640,11 @@ const Dashboard = () => {
                   </div>
                </div>
 
-               <div className="p-8">
+               <div className="p-4 md:p-8">
                  {historyType === "family" && (
                    <div className="mb-8 flex flex-wrap gap-4">
                      {familyMembers.length === 0 ? (
-                       <p className="text-gray-500 italic">No family members associated. Add them in Profile.</p>
+                       <p className="text-gray-500 italic px-4">No family members associated. Add them in Profile.</p>
                      ) : (
                        familyMembers.map(member => (
                          <button
@@ -641,38 +659,58 @@ const Dashboard = () => {
                    </div>
                  )}
 
-                 <div className="overflow-x-auto rounded-2xl border border-gray-100">
-                    <table className="w-full text-left">
-                      <thead className="bg-gray-50 text-gray-400 text-xs font-black uppercase tracking-widest">
+                  <div className="overflow-x-auto rounded-3xl border border-gray-100 shadow-sm hide-scrollbar bg-white">
+                    <table className="w-full text-left min-w-[700px]">
+                      <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
                         <tr>
-                          <th className="px-6 py-4">Participant</th>
-                          <th className="px-6 py-4">Last Zone</th>
-                          <th className="px-6 py-4">Current Zone</th>
-                          <th className="px-6 py-4">Enter Time</th>
-                          <th className="px-6 py-4">Leave Time</th>
-                          <th className="px-6 py-4">Duration</th>
+                          <th className="px-6 py-6 rounded-tl-3xl">Participant</th>
+                          <th className="px-6 py-6">Last Zone</th>
+                          <th className="px-6 py-6">Current Zone</th>
+                          <th className="px-6 py-6">Enter Time</th>
+                          <th className="px-6 py-6">Leave Time</th>
+                          <th className="px-6 py-6 rounded-tr-3xl text-center">Duration</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50">
+                      <tbody className="divide-y divide-gray-100 italic-last-row">
                         {historyData.length === 0 ? (
-                          <tr><td colSpan="6" className="px-6 py-12 text-center text-gray-400 font-medium italic">No movement records found.</td></tr>
+                          <tr><td colSpan="6" className="px-6 py-20 text-center text-gray-400 font-medium italic">No movement records found.</td></tr>
                         ) : (
                           historyData.map((log, i) => (
-                            <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                              <td className="px-6 py-4 font-bold text-gray-900">{log.participant}</td>
-                              <td className="px-6 py-4 font-medium text-gray-500">{log.last_zone || "-"}</td>
-                              <td className="px-6 py-4 font-bold text-orange-600">{log.current_zone}</td>
-                              <td className="px-6 py-4 text-xs font-bold text-gray-500">{log.enter_time}</td>
-                              <td className="px-6 py-4 text-xs font-bold text-gray-500">{log.leave_time || "Still Present"}</td>
-                              <td className="px-6 py-4 font-black text-gray-900">
-                                {log.duration_spent ? `${Math.floor(log.duration_spent / 60)}m ${log.duration_spent % 60}s` : "-"}
+                            <tr key={i} className="hover:bg-orange-50/50 transition-colors group">
+                              <td className="px-6 py-6">
+                                <div className="flex flex-col">
+                                  <span className="font-black text-slate-800 text-sm">{log.participant}</span>
+                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Device Tracker</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-6 font-bold text-slate-500 text-xs">{log.last_zone || "Entry Gate"}</td>
+                              <td className="px-6 py-6">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-600 text-white font-black text-[10px] uppercase shadow-lg shadow-orange-600/20">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></div>
+                                  {log.current_zone}
+                                </div>
+                              </td>
+                              <td className="px-6 py-6 text-xs font-black text-slate-500">{log.enter_time}</td>
+                              <td className="px-6 py-6">
+                                {log.leave_time ? (
+                                  <span className="text-xs font-black text-slate-500">{log.leave_time}</span>
+                                ) : (
+                                  <span className="px-3 py-1 rounded-full bg-green-100 text-green-600 font-black text-[9px] uppercase tracking-widest border border-green-200">Live Active</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-6 text-center">
+                                {log.duration_spent ? (
+                                  <span className="font-black text-slate-800 text-sm">{Math.floor(log.duration_spent / 60)}m {log.duration_spent % 60}s</span>
+                                ) : (
+                                  <div className="flex justify-center"><div className="h-2 w-2 rounded-full bg-green-500 animate-ping"></div></div>
+                                )}
                               </td>
                             </tr>
                           ))
                         )}
                       </tbody>
                     </table>
-                 </div>
+                  </div>
                </div>
             </div>
           </div>

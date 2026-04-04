@@ -75,7 +75,7 @@ const Header = () => {
 
     useEffect(() => {
         window.googleTranslateElementInit = () => {
-            if (window.google && window.google.translate) {
+            if (window.google && window.google.translate && window.google.translate.TranslateElement) {
                 new window.google.translate.TranslateElement(
                     { pageLanguage: 'en', includedLanguages: 'en,hi,mr,gu,ta,te,bn,kn,ml,pa,ur,or', autoDisplay: false },
                     'google_translate_element_hidden'

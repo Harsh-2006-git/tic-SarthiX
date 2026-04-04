@@ -7,7 +7,7 @@ import { sequelize } from "../config/database.js";
 import { Op } from "sequelize";
 
 // Admin email whitelist
-const ADMIN_EMAILS = ["amitmanmode01@gmail.com"];
+const ADMIN_EMAILS = ["amitmanmode01@gmail.com", "harshmanmode79@gmail.com"];
 
 // Middleware-style check
 export const isAdmin = (req) => {
@@ -43,7 +43,7 @@ export const getAdminStats = async (req, res) => {
         // Tickets per day (last 7 days)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
+
         const ticketsPerDay = await Ticket.findAll({
             attributes: [
                 'date',

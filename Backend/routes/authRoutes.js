@@ -3,13 +3,8 @@ import Client from "../models/client.js";
 import { register, login, updateProfile } from "../controllers/authController.js";
 import jwt from "jsonwebtoken";
 import multer from "multer";
-
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
+import { profileStorage } from "../config/cloudinary.js";
+const upload = multer({ storage: profileStorage });
 
 import authenticateClient from "../middlewares/authMiddleware.js";
 const router = express.Router();

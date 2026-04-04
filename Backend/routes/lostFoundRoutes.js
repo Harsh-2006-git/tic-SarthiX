@@ -8,12 +8,8 @@ import authMiddleware from "../middlewares/authMiddleware.js"; // <-- make sure 
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-
-const upload = multer({ storage });
+import { lostFoundStorage } from "../config/cloudinary.js";
+const upload = multer({ storage: lostFoundStorage });
 
 router.post("/upload", authMiddleware, upload.single("image"), createLostFound);
 router.get("/get", getLostFoundItems);

@@ -205,7 +205,7 @@ const ProfileRfidPage = () => {
       formData.append("name", editForm.name);
       formData.append("email", editForm.email);
       formData.append("phone", editForm.phone);
-      formData.append("userType", editForm.userType);
+      // Removed: formData.append("userType", editForm.userType);
       if (profileImage) {
         formData.append("profile_image", profileImage);
       }
@@ -364,40 +364,16 @@ const ProfileRfidPage = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Identifier</label>
-                        <div className="relative">
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                          <input
-                            type="text"
-                            value={editForm.phone}
-                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                            className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:border-orange-500 outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Devotee Tier</label>
-                        <div className="relative group/select">
-                          <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/select:text-orange-500 transition-colors" size={18} />
-                          <select
-                            value={editForm.userType}
-                            onChange={(e) => setEditForm({ ...editForm, userType: e.target.value })}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-10 focus:border-orange-500 focus:bg-white transition-all outline-none appearance-none cursor-pointer font-bold text-slate-700 text-sm"
-                          >
-                            <option value="Civilian">Civilian</option>
-                            <option value="VIP">VIP</option>
-                            <option value="Sadhu">Sadhu</option>
-                            <option value="Aged">Aged</option>
-                            {user.userType === "Admin" && <option value="Admin">Admin</option>}
-                          </select>
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </div>
-                        </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Mobile Identifier</label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        <input
+                          type="text"
+                          value={editForm.phone}
+                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                          className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:border-orange-500 outline-none"
+                        />
                       </div>
                     </div>
 

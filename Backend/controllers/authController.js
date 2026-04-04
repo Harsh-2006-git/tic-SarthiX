@@ -152,7 +152,7 @@ export const updateProfile = async (req, res) => {
     if (userType) client.userType = userType;
 
     if (req.file) {
-      client.profile_image = `/uploads/${req.file.filename}`;
+      client.profile_image = req.file.path; // Store the Cloudinary URL
     }
 
     await client.save();

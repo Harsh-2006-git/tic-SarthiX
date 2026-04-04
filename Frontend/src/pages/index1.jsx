@@ -47,38 +47,38 @@ const HomePage2 = () => {
   const handleSOS = async () => {
     setSosStatus('sending');
     if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser");
-        setSosStatus('idle');
-        return;
+      alert("Geolocation is not supported by your browser");
+      setSosStatus('idle');
+      return;
     }
 
     navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-            const { latitude, longitude } = position.coords;
-            const token = localStorage.getItem('token');
+      try {
+        const { latitude, longitude } = position.coords;
+        const token = localStorage.getItem('token');
 
-            const response = await fetch(`${API_V1}/admin/sos`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ lat: latitude, lng: longitude })
-            });
+        const response = await fetch(`${API_V1}/admin/sos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ lat: latitude, lng: longitude })
+        });
 
-            if (response.ok) {
-                setSosStatus('success');
-                setTimeout(() => setSosStatus('idle'), 5000);
-            } else {
-                throw new Error("Failed to reach emergency services");
-            }
-        } catch (err) {
-            alert(err.message);
-            setSosStatus('idle');
+        if (response.ok) {
+          setSosStatus('success');
+          setTimeout(() => setSosStatus('idle'), 5000);
+        } else {
+          throw new Error("Failed to reach emergency services");
         }
-    }, (err) => {
-        alert("Geolocation permission denied. Please enable location for SOS.");
+      } catch (err) {
+        alert(err.message);
         setSosStatus('idle');
+      }
+    }, (err) => {
+      alert("Geolocation permission denied. Please enable location for SOS.");
+      setSosStatus('idle');
     });
   };
 
@@ -91,10 +91,10 @@ const HomePage2 = () => {
       try {
         const module = await imageModules[path]();
         const url = module.default || module;
-        
+
         // Set the night hero image (using the last image as requested)
         if (i === totalToLoad - 1) {
-            setNightHeroUrl(url);
+          setNightHeroUrl(url);
         }
 
         const img = new Image();
@@ -207,16 +207,15 @@ const HomePage2 = () => {
       link: "/density"
     },
     {
-      title: "Routes & Maps",
-      description:
-        "Interactive maps to navigate temples, ghats, and nearby facilities",
-      icon: <Compass className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
+      title: "Family Safety Mode",
+      description: "Real-time family tracking with live route, SOS alerts & guardian notifications",
+      icon: <Shield className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
       features: [
-        "Temple & ghat navigation",
-        "Parking info",
-        "Shortest path guidance",
+        "Live Location Stream",
+        "Voice & Sound SOS Alerts",
+        "Guardian Rescue Route",
       ],
-      link: "/map"
+      link: "/family-mode"
     },
     {
       title: "Crowd Detection & Alerts",
@@ -242,11 +241,17 @@ const HomePage2 = () => {
     },
     {
       title: "AI-based Lost & Found",
-      description:
-        "Locate lost items with AI-powered tracking and notifications",
+      description: "Locate lost items with AI-powered tracking and notifications",
       icon: <Search className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
       features: ["Item registration", "AI image matching", "Real-time alerts"],
       link: "/lost-and-found"
+    },
+    {
+      title: "Interactive Divine Map",
+      description: "A 3D-integrated digital map of Ujjain with GPS navigation for devotees.",
+      icon: <MapPin className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
+      features: ["3D Temple Icons", "Ghat-wise Distance", "Live Crowd Heatmap"],
+      link: "/map"
     },
   ];
 
@@ -258,32 +263,32 @@ const HomePage2 = () => {
 
 
       {/* Hero Section with Scroll Animation */}
-      <section 
-        ref={heroContainerRef} 
+      <section
+        ref={heroContainerRef}
         className={`relative w-full ${imagesPreloaded ? "h-[250vh]" : "h-[calc(100vh-80px)]"} mt-[80px] bg-transparent transition-all duration-700`}
       >
         <div className="sticky top-[80px] h-[calc(100vh-80px)] w-full flex items-center justify-center lg:justify-start text-white overflow-hidden bg-slate-900">
           {/* Night View Image (shown while loading) */}
-          <div 
+          <div
             className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ${imagesPreloaded ? "opacity-0" : "opacity-100"}`}
-            style={{ 
+            style={{
               backgroundImage: `url(${nightHeroUrl})`,
               backgroundPosition: 'center 20%'
             }}
           >
             {!imagesPreloaded && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-48 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                       <div 
-                         className="h-full bg-orange-500 transition-all duration-300" 
-                         style={{ width: `${loadingProgress}%` }}
-                       ></div>
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                       Divine Portal Syncing... {loadingProgress}%
-                    </span>
-                 </div>
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-48 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-orange-500 transition-all duration-300"
+                      style={{ width: `${loadingProgress}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                    Divine Portal Syncing... {loadingProgress}%
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -338,17 +343,16 @@ const HomePage2 = () => {
                   <button
                     onClick={handleSOS}
                     disabled={sosStatus === 'sending'}
-                    className={`px-5 py-2.5 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-full font-black text-[10px] sm:text-[10px] md:text-sm transition-all duration-300 flex items-center gap-2 group transform hover:-translate-y-1 shadow-2xl ${
-                        sosStatus === 'success' 
-                        ? 'bg-emerald-600 text-white shadow-emerald-500/50 scale-105' 
+                    className={`px-5 py-2.5 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-full font-black text-[10px] sm:text-[10px] md:text-sm transition-all duration-300 flex items-center gap-2 group transform hover:-translate-y-1 shadow-2xl ${sosStatus === 'success'
+                        ? 'bg-emerald-600 text-white shadow-emerald-500/50 scale-105'
                         : 'bg-red-600 text-white border border-red-500/40 shadow-red-600/50 hover:bg-red-700'
-                    }`}
+                      }`}
                   >
                     <ShieldAlert size={18} className={`${sosStatus === 'sending' ? 'animate-spin' : 'animate-pulse group-hover:scale-125 transition-transform'}`} />
                     <span className="tracking-tighter">
-                        {sosStatus === 'idle' && "EMERGENCY SOS"}
-                        {sosStatus === 'sending' && "BROADCASTING..."}
-                        {sosStatus === 'success' && "HELP DISPATCHED!"}
+                      {sosStatus === 'idle' && "EMERGENCY SOS"}
+                      {sosStatus === 'sending' && "BROADCASTING..."}
+                      {sosStatus === 'success' && "HELP DISPATCHED!"}
                     </span>
                   </button>
                 </div>

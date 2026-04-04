@@ -1,6 +1,6 @@
 import express from "express";
 import Client from "../models/client.js";
-import { register, login, updateProfile } from "../controllers/authController.js";
+import { register, login, updateProfile, searchUser } from "../controllers/authController.js";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import { profileStorage } from "../config/cloudinary.js";
@@ -59,6 +59,7 @@ router.get("/profile", authenticateClient, async (req, res) => {
   }
 });
 
+router.get("/search", authenticateClient, searchUser);
 router.put("/profile", authenticateClient, upload.single("profile_image"), updateProfile);
 
 export default router;

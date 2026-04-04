@@ -1,4 +1,4 @@
-// SarthiX: Pilgrim Management System v1.1mergency Response Optimized
+// SarthiX: Pilgrim Management System v1.1 mergency Response Optimized
 import * as dotenv from "dotenv";
 import express, { json, response } from "express";
 import { connectDB, sequelize } from "./config/database.js";
@@ -16,10 +16,15 @@ import familyMemberRoutes from "./routes/familyMemberRoutes.js";
 
 import nearbyRoutes from "./routes/nearbyRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
-import Alert from "./models/alert.js"; // Ensures alerts table is created on sync
+import locationRoutes from "./routes/locationRoutes.js";
+import Alert from "./models/alert.js"; 
+import GuardianMapping from "./models/GuardianMapping.js"; // Force Sequelize sync
+import LocationLog from "./models/LocationLog.js"; // Force Sequelize sync
 
 import cors from "cors";
 import path from "path";
+import { createServer } from "http";
+import { initSocket } from "./socket/socketHandler.js";
 
 import { fileURLToPath } from "url";
 import crowdRoutes, { initCrowdAI } from "./routes/crowdRoutes.js";
@@ -99,6 +104,7 @@ app.use("/api/v1/family", familyMemberRoutes);
 
 app.use("/api/v1/nearby", nearbyRoutes);
 app.use("/api/v1/chatbot", chatbotRoutes);
+app.use("/api/v1/location", locationRoutes);
 
 
 app.use(errorHandler);
@@ -125,6 +131,11 @@ const initializeApp = async () => {
     throw error;
   }
 };
+
+// Create HTTP server
+const httpServer = createServer(app);
+// Initialize Socket.IO
+const io = initSocket(httpServer);
 
 // If we are running in Vercel, we can export the app and initialize DB
 // We attach a middleware that ensures the DB is connected before handling requests
@@ -153,8 +164,9 @@ if (process.env.VERCEL && process.env.NODE_ENV === "production") {
 
     await initializeApp();
 
-    app.listen(PORT, "0.0.0.0", () => {
+    httpServer.listen(PORT, "0.0.0.0", () => {
       console.log("📧 Email system ready");
+      console.log("🛰️  Real-time Socket.io active");
       console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     });

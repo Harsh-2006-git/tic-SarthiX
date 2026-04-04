@@ -23,6 +23,9 @@ import NearbyServices from "./pages/NearbyServices";
 import ChatbotPage from "./pages/ChatbotPage";
 import ScrollToTop from "./components/ScrollToTop";
 import AlertBanner from "./components/AlertBanner";
+import TrackingPage from "./pages/TrackingPage";
+import FollowMePage from "./pages/FollowMe";
+import FamilyMode from "./pages/FamilyMode";
 
 
 function App() {
@@ -91,6 +94,9 @@ function App() {
         <Route path="/ai-assistant" element={<AIAssistantPage />} />
         <Route path="/nearby" element={<NearbyServices />} />
         <Route path="/chatbot" element={<ChatbotPage />} />
+        <Route path="/tracking" element={<TrackingPage />} />
+        <Route path="/guardian-panel" element={<FollowMePage />} />
+        <Route path="/family-mode" element={<FamilyMode />} />
 
         {/* Catch-all route at the very bottom */}
         <Route path="*" element={<Navigate to="/auth" />} />

@@ -20,8 +20,14 @@ const ai = genkit({
   model: "googleai/gemini-2.5-flash",
 });
 
+const aiBackup = genkit({
+  plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY_BACKUP })],
+  model: "googleai/gemini-2.5-flash",
+});
+
 // ── Direct Google AI SDK (for itinerary - more reliable JSON output) ─────────
 const getGenAI = () => new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const getGenAIBackup = () => new GoogleGenerativeAI(process.env.GEMINI_API_KEY_BACKUP);
 
 // ── Helper: PCM buffer → base64 WAV ─────────────────────────────────────────
 function toWav(pcmData, channels = 1, rate = 24000, sampleWidth = 2) {
@@ -161,7 +167,7 @@ If you have all the information, summarize it for the user and populate the itin
       content: [{ text: m.content }],
     }));
 
-    const { output } = await ai.generate({
+    const generatePayload = {
       system: systemPrompt,
       messages,
       output: {
@@ -183,7 +189,17 @@ If you have all the information, summarize it for the user and populate the itin
           ? "नमस्ते! मैं RoamAI हूँ। शुरू करते हैं — आप कहाँ से यात्रा करना चाहते हैं?"
           : "Hello! I am RoamAI. Let's get started — where are you traveling from?")
         : undefined,
-    });
+    };
+
+    let output;
+    try {
+      const result = await ai.generate(generatePayload);
+      output = result.output;
+    } catch (primaryErr) {
+      console.warn("Primary AI failed for /chat, retrying with backup. Error:", primaryErr.message);
+      const result = await aiBackup.generate(generatePayload);
+      output = result.output;
+    }
 
     return res.json({ data: output });
   } catch (err) {
@@ -279,10 +295,19 @@ Return ONLY this JSON structure exactly:
 }`;
 
     // ── Call Gemini ──────────────────────────────────────────────────────────
-    const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    let text;
+    try {
+      const genAI = getGenAI();
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const result = await model.generateContent(prompt);
+      text = result.response.text();
+    } catch (primaryErr) {
+      console.warn("Primary AI failed for /itinerary, retrying with backup. Error:", primaryErr.message);
+      const genAIBackup = getGenAIBackup();
+      const modelBackup = genAIBackup.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const resultBackup = await modelBackup.generateContent(prompt);
+      text = resultBackup.response.text();
+    }
 
     // ── Parse JSON response ──────────────────────────────────────────────────
     let parsed;
@@ -312,7 +337,7 @@ router.post("/tts", async (req, res) => {
 
     const voiceName = language === "Hindi" ? "Achernar" : "Algenib";
 
-    const { media } = await ai.generate({
+    const ttsPayload = {
       model: "googleai/gemini-2.5-flash",
       config: {
         responseModalities: ["AUDIO"],
@@ -323,7 +348,17 @@ router.post("/tts", async (req, res) => {
         },
       },
       prompt: text,
-    });
+    };
+
+    let media;
+    try {
+      const result = await ai.generate(ttsPayload);
+      media = result.media;
+    } catch (primaryErr) {
+      console.warn("Primary AI failed for /tts, retrying with backup. Error:", primaryErr.message);
+      const result = await aiBackup.generate(ttsPayload);
+      media = result.media;
+    }
 
     if (!media || !media.url) {
       throw new Error("No media returned from TTS model");

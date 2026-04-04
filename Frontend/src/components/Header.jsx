@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Compass, User, LogOut, MapPin, ChevronDown, Globe, CreditCard } from "lucide-react";
+import { Menu, X, Compass, User, LogOut, MapPin, ChevronDown, Globe, CreditCard, ShieldCheck } from "lucide-react";
 import GuidePage from "../pages/guide";
 import logo from "../assets/logo.png";
 import { resolveMediaUrl } from "../config/api";
@@ -169,6 +169,7 @@ const Header = () => {
         { name: "Services", target: "services" },
         { name: "Parking", target: "/parking" },
         { name: "Contact", target: "contact" },
+        { name: "Admin", target: "/admin" },
     ];
 
     return (
@@ -261,6 +262,9 @@ const Header = () => {
                                         </div>
                                     </div>
                                     <div className="p-1.5 bg-white space-y-0.5">
+                                        <button onClick={() => handleNavigation("/admin")} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-orange-600 font-bold text-xs transition-all shadow-md shadow-slate-900/10 mb-1">
+                                            <ShieldCheck size={16} className="text-orange-400" /> Master Console
+                                        </button>
                                         <button onClick={() => handleNavigation("/profile")} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-orange-50 text-slate-700 hover:text-orange-600 font-bold text-xs transition-all"><User size={16} className="text-slate-400" /> My Profile</button>
                                         <button onClick={() => handleNavigation("/nearby")} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-orange-50 text-slate-700 hover:text-orange-600 font-bold text-xs transition-all"><Compass size={16} className="text-slate-400" /> Navigator</button>
                                         <div className="pt-1.5 mt-1.5 border-t border-slate-50">

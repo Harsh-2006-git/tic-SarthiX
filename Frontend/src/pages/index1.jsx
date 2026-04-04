@@ -39,6 +39,7 @@ const HomePage2 = () => {
   const imagesRef = useRef([]);
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [nightHeroUrl, setNightHeroUrl] = useState(null);
 
   useEffect(() => {
     let loadedCount = 0;
@@ -49,6 +50,12 @@ const HomePage2 = () => {
       try {
         const module = await imageModules[path]();
         const url = module.default || module;
+        
+        // Set the night hero image (using the last image as requested)
+        if (i === totalToLoad - 1) {
+            setNightHeroUrl(url);
+        }
+
         const img = new Image();
         img.src = url;
         img.onload = () => {
@@ -210,17 +217,39 @@ const HomePage2 = () => {
 
 
       {/* Hero Section with Scroll Animation */}
-      <section ref={heroContainerRef} className="relative w-full h-[250vh] mt-[80px] bg-transparent">
-        <div className="sticky top-[72px] h-[calc(100vh-72px)] w-full flex items-center justify-center lg:justify-start text-white overflow-hidden bg-[#fafafa]">
-          {!imagesPreloaded && (
-            <div className="absolute inset-0 flex items-center justify-center z-0">
-              <div className="text-orange-500 font-bold text-xl drop-shadow-lg">Loading Experience... {loadingProgress}%</div>
-            </div>
-          )}
+      <section 
+        ref={heroContainerRef} 
+        className={`relative w-full ${imagesPreloaded ? "h-[250vh]" : "h-[calc(100vh-80px)]"} mt-[80px] bg-transparent transition-all duration-700`}
+      >
+        <div className="sticky top-[80px] h-[calc(100vh-80px)] w-full flex items-center justify-center lg:justify-start text-white overflow-hidden bg-slate-900">
+          {/* Night View Image (shown while loading) */}
+          <div 
+            className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ${imagesPreloaded ? "opacity-0" : "opacity-100"}`}
+            style={{ 
+              backgroundImage: `url(${nightHeroUrl})`,
+              backgroundPosition: 'center 20%'
+            }}
+          >
+            {!imagesPreloaded && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                 <div className="flex flex-col items-center gap-4">
+                    <div className="w-48 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                       <div 
+                         className="h-full bg-orange-500 transition-all duration-300" 
+                         style={{ width: `${loadingProgress}%` }}
+                       ></div>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                       Divine Portal Syncing... {loadingProgress}%
+                    </span>
+                 </div>
+              </div>
+            )}
+          </div>
+
           <canvas
             ref={canvasRef}
-            className="absolute inset-0 w-full h-full object-cover object-top z-0 transition-opacity duration-1000"
-            style={{ opacity: imagesPreloaded ? 1 : 0 }}
+            className={`absolute inset-0 w-full h-full object-cover object-top z-0 transition-opacity duration-1000 ${imagesPreloaded ? "opacity-100" : "opacity-0"}`}
           ></canvas>
 
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/50 lg:bg-gradient-to-r lg:from-black/60 lg:via-black/20 lg:to-transparent z-[1] pointer-events-none"></div>

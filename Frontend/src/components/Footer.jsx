@@ -17,19 +17,19 @@ const Footer = () => {
     const navigate = useNavigate();
 
     return (
-        <footer id="contact" className="bg-[#050505] text-white pt-16 pb-8 px-6 relative overflow-hidden border-t border-white/5">
+        <footer id="contact" className="bg-[#050505] text-white pt-10 md:pt-16 pb-6 md:pb-8 px-6 relative overflow-hidden border-t border-white/5">
             {/* Dynamic Background Elements */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent"></div>
             <div className="absolute -top-24 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
             <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-red-600/5 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '1s' }}></div>
 
             <div className="max-w-7xl mx-auto relative z-10">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 mb-10 md:mb-16">
 
                     {/* Brand Identity - Expanded for Presence */}
-                    <div className="md:col-span-5 space-y-8 flex flex-col items-center md:items-start text-center md:text-left">
+                    <div className="md:col-span-5 space-y-4 md:space-y-8 flex flex-col items-center md:items-start text-center md:text-left">
                         <div className="group cursor-pointer">
-                            <div className="flex items-center gap-3 text-3xl font-black italic tracking-tighter transition-all duration-300 group-hover:scale-105">
+                            <div className="flex items-center gap-3 text-2xl md:text-3xl font-black italic tracking-tighter transition-all duration-300 group-hover:scale-105">
                                 <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">DIVYA</span>
                                 <span className="text-white relative">
                                     YATRA
@@ -51,12 +51,12 @@ const Footer = () => {
                             ensuring your pilgrimage to Ujjain is as divine as the city itself.
                         </p>
 
-                        <div className="flex gap-4">
+                        <div className="hidden md:flex gap-3 md:gap-4">
                             {[Facebook, Twitter, Instagram, Youtube].map((Icon, idx) => (
                                 <a
                                     key={idx}
                                     href="#"
-                                    className="w-11 h-11 rounded-2xl bg-white/[0.03] flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all duration-500 border border-white/5 hover:border-orange-500 shadow-lg relative group"
+                                    className="w-9 h-9 md:w-11 md:h-11 rounded-xl md:rounded-2xl bg-white/[0.03] flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all duration-500 border border-white/5 hover:border-orange-500 shadow-lg relative group"
                                 >
                                     <Icon size={18} className="relative z-10" />
                                     <div className="absolute inset-0 bg-orange-500 blur-xl opacity-0 group-hover:opacity-30 transition-opacity"></div>
@@ -96,12 +96,12 @@ const Footer = () => {
                     </div>
 
                     {/* Connect Section - Enhanced */}
-                    <div className="md:col-span-4 flex flex-col items-center md:items-start space-y-8 md:border-l md:border-white/5 md:pl-12">
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-orange-500 mb-2 md:mb-0 flex items-center gap-2">
+                    <div className="md:col-span-4 flex flex-col items-center md:items-start space-y-4 md:space-y-8 md:border-l md:border-white/5 md:pl-12">
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-orange-500 mb-0 flex items-center gap-2">
                             Support
                         </h3>
 
-                        <div className="space-y-5 w-full">
+                        <div className="space-y-3 md:space-y-5 w-full">
                             {[
                                 { icon: Phone, text: "+91 8305721431", sub: "24/7 Helpline" },
                                 { icon: Mail, text: "harshmanmode79@gmail.com", sub: "Support Mail" },
@@ -122,9 +122,9 @@ const Footer = () => {
                 </div>
 
                 {/* Bottom Bar - Aesthetic Finish */}
-                <div className="border-t border-white/5 pt-10 flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex flex-col items-center md:items-start gap-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">
+                <div className="border-t border-white/5 pt-6 md:pt-10 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8">
+                    <div className="flex flex-col items-center md:items-start gap-1">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 text-center md:text-left leading-relaxed">
                             © 2025 DIVYA YATRA • SACRED ARCHITECTURE
                         </p>
                         <div className="flex items-center gap-2 text-[9px] text-gray-700 font-bold uppercase tracking-widest">
@@ -133,7 +133,7 @@ const Footer = () => {
                         </div>
                     </div>
 
-                    <div className="flex gap-10 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                    <div className="flex gap-6 md:gap-10 text-[10px] font-black uppercase tracking-widest text-gray-500">
                         {["Security", "Privacy", "Terms", "API"].map((link) => (
                             <a key={link} href="#" className="hover:text-orange-500 transition-all transform hover:scale-110">
                                 {link}

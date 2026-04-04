@@ -159,8 +159,13 @@ if (process.env.VERCEL && process.env.NODE_ENV === "production") {
 } else {
   // Local development entry point
   const startServer = async () => {
-    process.stdout.write("\u001b[2J\u001b[0;0H");
+    // Check if we are in a non-production/non-CI environment before clearing
+    if (process.env.NODE_ENV !== "production" && !process.env.RENDER) {
+      process.stdout.write("\u001b[2J\u001b[0;0H");
+    }
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🚀 Initializing on port ${PORT}...`);
 
     await initializeApp();
 

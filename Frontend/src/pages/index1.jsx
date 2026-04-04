@@ -21,7 +21,8 @@ import {
   Hotel,
   Utensils,
   Shield,
-  ShieldAlert
+  ShieldAlert,
+  LayoutDashboard
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -253,6 +254,20 @@ const HomePage2 = () => {
       features: ["3D Temple Icons", "Ghat-wise Distance", "Live Crowd Heatmap"],
       link: "/map"
     },
+    {
+      title: "AI Yatra Planner",
+      description: "Plan your spiritual journey with our AI-powered travel assistant.",
+      icon: <Bot className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
+      features: ["Custom Itinerary", "Multilingual Support", "24/7 AI Guidance"],
+      link: "/chatbot"
+    },
+    {
+      title: "Admin Master Dashboard",
+      description: "Centralized control panel for monitoring and managing yatra operations.",
+      icon: <LayoutDashboard className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />,
+      features: ["Real-time Monitoring", "Emergency Controls", "System Analytics"],
+      link: "/admin"
+    }
   ];
 
 

@@ -166,7 +166,7 @@ const Header = () => {
 
     const navItems = [
         { name: "Home", target: "/" },
-        { name: "Guardian Panel", target: "/guardian-panel" },
+        { name: "Services", target: "services" },
         { name: "Family Mode", target: "/family-mode" },
         { name: "Parking", target: "/parking" },
         { name: "Admin", target: "/admin" },

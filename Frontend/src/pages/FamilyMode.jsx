@@ -55,7 +55,12 @@ const FamilyMode = () => {
   const trailPointsRef = useRef([]);
 
   /* state */
-  const [role, setRole] = useState(null);         // 'pilgrim' | 'guardian'
+  const [role, setRoleState] = useState(localStorage.getItem('family_role') || null);
+  const setRole = (val) => {
+    setRoleState(val);
+    if (val) localStorage.setItem('family_role', val);
+    else localStorage.removeItem('family_role');
+  };
   const [status, setStatus] = useState('');
 
   // pilgrim
@@ -574,52 +579,56 @@ const FamilyMode = () => {
   /* ─────────────────────────────────────────────────── */
   if (!role) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-        <div className="max-w-4xl w-full relative">
-          <div className="absolute -top-40 -left-40 w-80 h-80 bg-orange-600/20 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
+      <div className="flex flex-col min-h-screen bg-slate-50">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4 mt-24 mb-16 relative overflow-hidden">
+          <div className="max-w-3xl w-full relative">
+            <div className="absolute -top-40 -left-40 w-80 h-80 bg-orange-500/10 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-[120px] animate-pulse" />
 
-          <div className="text-center mb-16 relative z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/50 border border-slate-700 text-orange-500 mb-6">
-              <Sparkles size={16} />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Family Safety Network</span>
+            <div className="text-center mb-10 md:mb-12 relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-white border border-slate-200 text-orange-600 mb-4 md:mb-6 shadow-sm">
+                <Sparkles size={14} className="md:w-4 md:h-4" />
+                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em]">Family Safety Network</span>
+              </div>
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-2 md:mb-3 tracking-tighter uppercase leading-none">
+                Choose Your <span className="text-orange-500">Role</span>
+              </h2>
+              <p className="text-[10px] md:text-sm text-slate-400 font-bold max-w-sm mx-auto uppercase tracking-widest">
+                Are you travelling or watching over someone?
+              </p>
             </div>
-            <h2 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tighter uppercase leading-none">
-              Choose Your <span className="text-orange-500">Role</span>
-            </h2>
-            <p className="text-slate-400 font-bold max-w-lg mx-auto">
-              Are you travelling or watching over someone?
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-            {/* Traveller */}
-            <button onClick={() => setRole('pilgrim')}
-              className="group relative bg-slate-800/40 backdrop-blur-xl p-12 rounded-[3rem] border-2 border-slate-700/50 hover:border-orange-500 transition-all text-center overflow-hidden h-[380px] flex flex-col justify-center">
-              <div className="w-24 h-24 bg-orange-600/20 text-orange-500 rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-2xl group-hover:scale-110">
-                <Users size={48} />
-              </div>
-              <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tight">I'm Travelling</h3>
-              <p className="text-slate-500 font-bold text-sm leading-relaxed">Set my route, assign a guardian, and let them track me live.</p>
-              <div className="mt-6 flex items-center justify-center gap-2 text-orange-500 font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                Enter Pilgrim Mode <ChevronRight size={14} />
-              </div>
-            </button>
+            <div className="grid grid-cols-2 gap-3 md:gap-6 relative z-10">
+              {/* Traveller */}
+              <button onClick={() => setRole('pilgrim')}
+                className="group relative bg-white p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border-2 border-slate-100 hover:border-orange-500 transition-all text-center overflow-hidden h-auto aspect-square md:aspect-auto md:h-[300px] flex flex-col justify-center shadow-xl shadow-slate-200/50">
+                <div className="w-12 h-12 md:w-20 md:h-20 bg-orange-50 text-orange-600 rounded-xl md:rounded-3xl flex items-center justify-center mx-auto mb-4 md:mb-6 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-inner group-hover:scale-110">
+                  <Users className="w-6 h-6 md:w-10 md:h-10" />
+                </div>
+                <h3 className="text-xs md:text-2xl font-black text-slate-900 mb-1 md:mb-2 uppercase tracking-tight">I'm Travelling</h3>
+                <p className="text-[9px] md:text-xs text-slate-400 font-bold leading-relaxed line-clamp-2 md:line-clamp-none">Get tracked live.</p>
+                <div className="mt-4 hidden md:flex items-center justify-center gap-2 text-orange-600 font-black text-[9px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                  Enter Pilgrim Mode <ChevronRight size={12} />
+                </div>
+              </button>
 
-            {/* Guardian */}
-            <button onClick={() => setRole('guardian')}
-              className="group relative bg-slate-800/40 backdrop-blur-xl p-12 rounded-[3rem] border-2 border-slate-700/50 hover:border-blue-500 transition-all text-center overflow-hidden h-[380px] flex flex-col justify-center">
-              <div className="w-24 h-24 bg-blue-600/20 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-2xl group-hover:scale-110">
-                <Shield size={48} />
-              </div>
-              <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tight">I'm a Guardian</h3>
-              <p className="text-slate-500 font-bold text-sm leading-relaxed">Monitor my family member's live position and respond to emergencies.</p>
-              <div className="mt-6 flex items-center justify-center gap-2 text-blue-500 font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                Enter Command Center <ChevronRight size={14} />
-              </div>
-            </button>
+              {/* Guardian */}
+              <button onClick={() => setRole('guardian')}
+                className="group relative bg-white p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border-2 border-slate-100 hover:border-blue-600 transition-all text-center overflow-hidden h-auto aspect-square md:aspect-auto md:h-[300px] flex flex-col justify-center shadow-xl shadow-slate-200/50">
+                <div className="w-12 h-12 md:w-20 md:h-20 bg-blue-50 text-blue-600 rounded-xl md:rounded-3xl flex items-center justify-center mx-auto mb-4 md:mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner group-hover:scale-110">
+                  <Shield className="w-6 h-6 md:w-10 md:h-10" />
+                </div>
+                <h3 className="text-xs md:text-2xl font-black text-slate-900 mb-1 md:mb-2 uppercase tracking-tight">I'm a Guardian</h3>
+                <p className="text-[9px] md:text-xs text-slate-400 font-bold leading-relaxed line-clamp-2 md:line-clamp-none">Monitor family.</p>
+                <div className="mt-4 hidden md:flex items-center justify-center gap-2 text-blue-600 font-black text-[9px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                  Enter Command Center <ChevronRight size={12} />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -628,7 +637,7 @@ const FamilyMode = () => {
   /*                  MAIN DASHBOARD                     */
   /* ─────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#f8fafc]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div className="flex flex-col min-h-screen bg-[#f8fafc]">
       <style>{`
         .glass{background:rgba(255,255,255,.85);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.3)}
         .pulse-red{animation:pr 2s infinite}
@@ -639,7 +648,7 @@ const FamilyMode = () => {
 
       <Header />
 
-      <div className="pt-24 pb-12 px-4 md:px-8 lg:px-12 max-w-[1700px] mx-auto">
+      <div className="flex-1 pt-32 pb-24 px-4 md:px-8 lg:px-12 max-w-[1700px] mx-auto w-full">
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">

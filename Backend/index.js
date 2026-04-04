@@ -111,7 +111,7 @@ const initializeApp = async () => {
   try {
     console.log("🔄 Divya Yatra Server Initializing...");
     await connectDB();
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     console.log("✅ Database Connected");
 
     const backendRoot = path.dirname(fileURLToPath(import.meta.url));
@@ -121,6 +121,7 @@ const initializeApp = async () => {
     isInitialized = true;
   } catch (error) {
     console.error("❌ Failed to ignite server:", error.message);
+    throw error;
   }
 };
 
@@ -128,7 +129,14 @@ const initializeApp = async () => {
 // We attach a middleware that ensures the DB is connected before handling requests
 app.use(async (req, res, next) => {
   if (!isInitialized) {
-    await initializeApp();
+    try {
+      await initializeApp();
+      if (!isInitialized) {
+        return res.status(503).json({ message: "Server initializing, please wait..." });
+      }
+    } catch (err) {
+      return res.status(500).json({ message: "Server failed to initialize", error: err.message });
+    }
   }
   next();
 });

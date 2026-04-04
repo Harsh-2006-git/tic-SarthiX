@@ -27,14 +27,14 @@ if (process.env.DB_SSL === "true") {
     require: true,
     rejectUnauthorized: false
   };
-  
+
   if (process.env.DB_CA_CERT_PATH) {
     try {
       // Use process.cwd() or fallback to basic requires
-      const certPath = process.env.DB_CA_CERT_PATH.startsWith("/") 
-        ? process.env.DB_CA_CERT_PATH 
+      const certPath = process.env.DB_CA_CERT_PATH.startsWith("/")
+        ? process.env.DB_CA_CERT_PATH
         : new URL(`../${process.env.DB_CA_CERT_PATH}`, import.meta.url).pathname;
-        
+
       if (fs.existsSync(certPath)) {
         sslOptions.ca = fs.readFileSync(certPath);
       } else if (fs.existsSync(process.env.DB_CA_CERT_PATH)) {
@@ -83,6 +83,10 @@ if (isCloud && process.env.DATABASE_URL) {
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
+    const config = sequelize.options;
+    const dbName = config.database || (sequelize.connectionManager.config && sequelize.connectionManager.config.database);
+    const dbHost = config.host || (sequelize.connectionManager.config && sequelize.connectionManager.config.host);
+    console.log(`✅ Database Connected: ${dbName} at ${dbHost}`);
   } catch (error) {
     console.error("❌ Database connection failed:", error);
     throw error;

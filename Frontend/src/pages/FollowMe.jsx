@@ -44,13 +44,18 @@ const RoutingMachine = ({ start, end, color }) => {
     return null;
 };
 
-const RecenterMap = ({ position }) => {
+const AutoFitBounds = ({ pos1, pos2 }) => {
     const map = useMap();
     useEffect(() => {
-        if (position) {
-            map.setView(position, map.getZoom());
+        if (pos1 && pos2) {
+            const bounds = L.latLngBounds([pos1, pos2]);
+            map.fitBounds(bounds, { padding: [100, 100], maxZoom: 15 });
+        } else if (pos1) {
+            map.setView(pos1, 15);
+        } else if (pos2) {
+            map.setView(pos2, 15);
         }
-    }, [position, map]);
+    }, [pos1, pos2, map]);
     return null;
 };
 
@@ -144,6 +149,13 @@ const FollowMePage = () => {
                 .leaflet-container { background: #020617 !important; }
                 .glass-panel { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
                 .sos-card { background: linear-gradient(135deg, #be123c 0%, #9f1239 100%); }
+                @keyframes dash-move {
+                    from { stroke-dashoffset: 20; }
+                    to { stroke-dashoffset: 0; }
+                }
+                .animate-sos-line {
+                    animation: dash-move 2s linear infinite;
+                }
             `}</style>
             
             <Header />
@@ -263,22 +275,51 @@ const FollowMePage = () => {
 
                 {/* Main Content - Map Grid */}
                 <div className="flex-1 relative bg-slate-950">
-                    <MapContainer center={[23.1765, 75.7849]} zoom={15} className="h-full w-full">
+                    <MapContainer 
+                        center={[23.1765, 75.7849]} 
+                        zoom={13} 
+                        className="h-full w-full"
+                        zoomControl={false}
+                    >
                         <TileLayer 
                             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" 
                             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
                         />
+
+                        {/* Smart Map Centering & Zooming */}
+                        <AutoFitBounds pos1={guardianPosition} pos2={userPosition} />
                         
+                        {/* Guardian (Tracker) Marker */}
+                        {guardianPosition && (
+                            <Marker position={guardianPosition} icon={L.divIcon({
+                                className: 'guardian-marker',
+                                html: `<div class="w-10 h-10 bg-orange-600 rounded-full border-4 border-white shadow-2xl flex items-center justify-center text-white">
+                                        <div class="absolute inset-0 bg-orange-600 rounded-full animate-pulse opacity-20"></div>
+                                        <div class="relative z-10 font-bold text-[18px]">🛡️</div>
+                                       </div>`,
+                                iconSize: [40, 40],
+                                iconAnchor: [20, 20]
+                            })}>
+                                <Popup className="dark-popup">
+                                    <div className="p-3">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Tracker Status</p>
+                                        <p className="text-sm font-black text-slate-800">You (Guardian)</p>
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        )}
+
+                        {/* Protégé (Tracked) Marker */}
                         {userPosition && (
                             <>
                                 <Marker position={userPosition} icon={L.divIcon({
                                     className: 'user-marker',
-                                    html: `<div class="w-10 h-10 bg-blue-600 rounded-full border-4 border-white shadow-2xl flex items-center justify-center text-white scale-110">
-                                            <div class="absolute inset-0 bg-blue-600 rounded-full animate-ping opacity-20"></div>
-                                            <div class="relative z-10 font-bold text-[18px]">👤</div>
+                                    html: `<div class="w-12 h-12 bg-blue-600 rounded-2xl border-4 border-white shadow-2xl flex items-center justify-center text-white scale-110">
+                                            <div class="absolute inset-0 bg-blue-600 rounded-2xl animate-ping opacity-20"></div>
+                                            <div class="relative z-10 font-bold text-[22px]">🚶</div>
                                            </div>`,
-                                    iconSize: [40, 40],
-                                    iconAnchor: [20, 20]
+                                    iconSize: [48, 48],
+                                    iconAnchor: [24, 24]
                                 })}>
                                     <Popup className="dark-popup">
                                         <div className="p-3">
@@ -287,27 +328,50 @@ const FollowMePage = () => {
                                         </div>
                                     </Popup>
                                 </Marker>
-                                <Polyline positions={selectedUserPath} color="#3b82f6" weight={4} opacity={0.4} dashArray="8, 12" />
-                                <RecenterMap position={userPosition} />
+                                {/* Refined Path Styling */}
+                                <Polyline 
+                                    positions={selectedUserPath} 
+                                    color="#2563eb" 
+                                    weight={6} 
+                                    opacity={0.6}
+                                />
+                                <Polyline 
+                                    positions={selectedUserPath} 
+                                    color="#60a5fa" 
+                                    weight={2} 
+                                    opacity={1}
+                                />
                             </>
                         )}
 
-                        {/* Draw the user's family mode route if active */}
-                        {activeTrackingSesssion && activeTrackingSesssion.userId === selectedUserId && (
+                        {/* Planned Pilgrimage Route (S-D) */}
+                        {activeTrackingSesssion && activeTrackingSesssion.userId === selectedUserId && !sosRoute && (
                             <RoutingMachine 
                                 start={[activeTrackingSesssion.src.lat, activeTrackingSesssion.src.lng]} 
                                 end={[activeTrackingSesssion.dest.lat, activeTrackingSesssion.dest.lng]}
-                                color="#f97316"
+                                color="#f59e0b"
                             />
                         )}
 
-                        {/* Draw SOS route if needed */}
+                        {/* Permanent SOS Rescue Connection (Tracker to Tracked) */}
                         {sosRoute && (
-                            <RoutingMachine 
-                                start={sosRoute.start} 
-                                end={sosRoute.end}
-                                color="#e11d48"
-                            />
+                            <>
+                                <Polyline 
+                                    positions={[sosRoute.start, sosRoute.end]} 
+                                    color="#f43f5e" 
+                                    weight={8} 
+                                    opacity={0.3} 
+                                    dashArray="1, 15"
+                                />
+                                <Polyline 
+                                    positions={[sosRoute.start, sosRoute.end]} 
+                                    color="#f43f5e" 
+                                    weight={3} 
+                                    opacity={1}
+                                    dashArray="10, 10"
+                                    className="animate-sos-line"
+                                />
+                            </>
                         )}
 
                         {sosAlerts.map((alert, idx) => (

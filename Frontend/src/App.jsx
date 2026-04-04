@@ -6,7 +6,7 @@ import LostAndFound from "./pages/LostAndFound";
 import LiveDarshan from "./pages/LiveDarshan";
 import ProtectedRoute from "./components/PrivateRoute";
 import ProfilePage from "./pages/profile";
-import Ticket from "./pages/Ticket";
+import Ticket from "./pages/ticket";
 import Density from "./pages/density";
 import CrowdDetector from "./pages/CrowdDetector";
 import MapPage from "./pages/MapPage";

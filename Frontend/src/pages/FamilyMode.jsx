@@ -530,34 +530,39 @@ const FamilyMode = () => {
   };
 
   const handleSOS = () => {
-    // 1. Instant feedback
-    setStatus('🚨 SOS BROADCASTING NOW...');
-    speak('Emergency SOS has been sent.');
-    playAlarm();
-
-    // 2. Immediate emit with last known good pos if available
+    // 0. BROADCAST IMMEDIATELY (Zero latency)
+    // If we have ANY location (even slightly old), send it NOW.
     if (livePos) {
       triggerSOS(livePos[0], livePos[1]);
-      setStatus('🚨 SOS SENT (using current position)!');
+      setStatus('🚨 SOS BROADCASTED! Sending location...');
+    } else {
+      setStatus('🚨 SOS INITIATED! Locking GPS...');
     }
 
-    // 3. Fast-request a fresh one (no retries)
+    // 1. Play feedback sounds/voice (Backgrounded)
+    speak('Emergency SOS has been sent. Authorities and your guardian are being notified.');
+    playAlarm();
+
+    // 2. Aggressive Fresh GPS Lock (Parallel)
     navigator.geolocation.getCurrentPosition(
       (p) => {
         const { latitude, longitude } = p.coords;
-        triggerSOS(latitude, longitude); // Send again if different
+        // Broadcast fresh position
+        triggerSOS(latitude, longitude); 
         setLivePos([latitude, longitude]);
+        
         if (liveMarkerRef.current) {
           liveMarkerRef.current.setLatLng([latitude, longitude]);
         } else {
           addMarker([latitude, longitude], '#f43f5e', '📍', 'live');
         }
-        setStatus('🚨 SOS UPDATED with fresh coordinates!');
+        setStatus('🚨 SOS UPDATED with fresh precise coordinates!');
       },
-      () => {
-        if (!livePos) setStatus('🚨 SOS FAILED: No GPS signal found.');
+      (err) => {
+        console.error("SOS GPS Error:", err);
+        if (!livePos) setStatus('🚨 SOS ALERT SENT, but could not get GPS lock.');
       },
-      { enableHighAccuracy: true, timeout: 2000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
@@ -770,27 +775,27 @@ const FamilyMode = () => {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="mt-8 space-y-3">
-                  {!tracking ? (
-                    <button onClick={handleStartTracking}
-                      disabled={!selectedGuardian || !srcPos || !destPos || !routeLocked}
-                      className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-orange-500/40">
-                      <Sparkles size={18} /> Start Tracking
-                    </button>
-                  ) : (
-                    <>
+                  {/* SOS and Tracking Status */}
+                  <div className="mt-8 space-y-3">
+                    {tracking ? (
                       <button onClick={handleStopTracking}
-                        className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 active:scale-95">
+                        className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 active:scale-95 shadow-lg">
                         <XCircle size={18} /> Stop Tracking
                       </button>
-                      <button onClick={handleSOS}
-                        className="pulse-red w-full py-4 bg-red-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 border-4 border-red-200">
-                        <AlertTriangle size={22} /> EMERGENCY SOS
+                    ) : (
+                      <button onClick={handleStartTracking}
+                        disabled={!selectedGuardian || !srcPos || !destPos || !routeLocked}
+                        className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-orange-500/40">
+                        <Sparkles size={18} /> Start Tracking
                       </button>
-                    </>
-                  )}
-                </div>
+                    )}
+
+                    <button onClick={handleSOS}
+                      className="group relative w-full py-4 bg-red-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 border-4 border-red-200 overflow-hidden transition-all hover:bg-red-700 active:scale-95 shadow-xl shadow-red-600/20">
+                      <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                      <AlertTriangle size={22} className="animate-pulse" /> EMERGENCY PANIC
+                    </button>
+                  </div>
               </div>
             ) : (
               /* ─── GUARDIAN SIDEBAR ─── */

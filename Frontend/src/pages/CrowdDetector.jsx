@@ -394,44 +394,81 @@ const CrowdDetector = () => {
 
                             {/* Offline/Placeholder States */}
                             {!isStreaming && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center bg-gray-100">
-                                    <div className="w-16 h-16 md:w-24 md:h-24 mb-4 md:mb-6 rounded-full bg-orange-100 flex items-center justify-center">
-                                        {isModelLoading ? (
-                                            <Loader2 className="w-8 h-8 md:w-12 md:h-12 text-orange-600 animate-spin" />
-                                        ) : (
-                                            <Camera className="w-8 h-8 md:w-12 md:h-12 text-orange-600" />
-                                        )}
-                                    </div>
-                                    <h3 className="text-2xl font-bold mb-4 text-gray-800">
-                                        {isModelLoading ? 'Initializing AI Engine...' : mode === 'camera' ? 'Camera Ready' : 'Video Detection'}
-                                    </h3>
-                                    {mode === 'camera' ? (
-                                        <button
-                                            onClick={handleStartCamera}
-                                            disabled={isStarting || isModelLoading}
-                                            className="px-6 md:px-10 py-3 md:py-4 bg-orange-600 hover:bg-orange-500 rounded-full font-black text-[10px] md:text-sm tracking-widest uppercase transition-all transform hover:scale-105 shadow-xl shadow-orange-500/20 disabled:opacity-50 text-white flex items-center gap-2"
-                                        >
-                                            <Play size={16} /> {isStarting ? 'Activating...' : 'Start Camera AI'}
-                                        </button>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            <input
-                                                type="file"
-                                                ref={fileInputRef}
-                                                onChange={handleFileUpload}
-                                                className="hidden"
-                                                accept="video/*"
-                                            />
-                                            <button
-                                                onClick={() => fileInputRef.current.click()}
-                                                className="px-6 md:px-10 py-3 md:py-4 bg-orange-600 hover:bg-orange-500 rounded-full font-black text-[10px] md:text-sm tracking-widest uppercase transition-all text-white flex items-center gap-2"
-                                            >
-                                                <Upload size={16} /> Load Local Video
-                                            </button>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center bg-gray-50/95 backdrop-blur-sm">
+                                    {isModelLoading ? (
+                                        <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
+                                            <div className="relative w-32 h-32 md:w-48 md:h-48 mx-auto mb-10">
+                                                {/* Outer Pulsing Ring */}
+                                                <div className="absolute inset-0 rounded-full border-4 border-orange-500/20 animate-ping"></div>
+                                                {/* Rotating Neural Ring */}
+                                                <div className="absolute inset-0 rounded-full border-t-4 border-orange-600 animate-spin transition-all duration-1000"></div>
+                                                {/* Inner Core */}
+                                                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-2xl shadow-orange-500/40">
+                                                    <Activity className="w-10 h-10 md:w-16 md:h-16 text-white animate-pulse" />
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="space-y-4">
+                                                <h3 className="text-xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter italic">
+                                                    Downloading Neural AI Detector...
+                                                </h3>
+                                                <div className="px-8 flex flex-col gap-3">
+                                                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden border border-slate-100">
+                                                        <div className="h-full bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 w-[60%] animate-[progress_3s_ease-in-out_infinite] bg-[length:200%_100%]"></div>
+                                                    </div>
+                                                    <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                                                        Establishing local neural link. This download happens once and enables 100% private, on-device processing.
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-16 h-16 md:w-24 md:h-24 mb-4 md:mb-6 rounded-[2rem] bg-orange-100 flex items-center justify-center border-2 border-orange-200 shadow-xl shadow-orange-500/10 active:scale-95 transition-transform">
+                                                <Camera className="w-8 h-8 md:w-12 md:h-12 text-orange-600" />
+                                            </div>
+                                            <h3 className="text-2xl md:text-3xl font-black mb-6 text-slate-900 uppercase tracking-tighter">
+                                                {mode === 'camera' ? 'Camera AI Ready' : 'Video Analysis Hub'}
+                                            </h3>
+                                            {mode === 'camera' ? (
+                                                <button
+                                                    onClick={handleStartCamera}
+                                                    disabled={isStarting}
+                                                    className="group relative px-8 md:px-12 py-4 md:py-5 bg-slate-900 text-white rounded-2xl font-black text-[10px] md:text-sm tracking-[0.2em] uppercase transition-all shadow-2xl shadow-slate-900/20 active:scale-95 overflow-hidden"
+                                                >
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                    <div className="relative flex items-center gap-3">
+                                                        <Play size={18} fill="currentColor" /> {isStarting ? 'Synchronizing...' : 'Initialize Live Sensor'}
+                                                    </div>
+                                                </button>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    <input
+                                                        type="file"
+                                                        ref={fileInputRef}
+                                                        onChange={handleFileUpload}
+                                                        className="hidden"
+                                                        accept="video/*"
+                                                    />
+                                                    <button
+                                                        onClick={() => fileInputRef.current.click()}
+                                                        className="px-10 py-5 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black text-xs tracking-widest uppercase transition-all shadow-xl shadow-orange-500/20 flex items-center gap-3"
+                                                    >
+                                                        <Upload size={18} /> Select Footage For Analysis
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             )}
+
+                <style>{`
+                    @keyframes progress {
+                        0% { background-position: 100% 0%; }
+                        100% { background-position: -100% 0%; }
+                    }
+                `}</style>
  
                             {isStreaming && (
                                 <div className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-full border border-gray-200 shadow-sm">

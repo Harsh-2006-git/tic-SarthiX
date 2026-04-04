@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import jsQR from "jsqr";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { Map, ScanLine, Shield } from "lucide-react";
+import { Map, ScanLine, Shield, Trash2, MapPin } from "lucide-react";
 import { API_V1 } from "../config/api";
 
 const Dashboard = () => {
@@ -69,10 +69,10 @@ const Dashboard = () => {
   const fetchHistory = async (memberId = null) => {
     try {
       const token = localStorage.getItem("token");
-      const url = memberId 
+      const url = memberId
         ? `${API_V1}/zone/history?member_id=${memberId}`
         : `${API_V1}/zone/history`;
-        
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -390,6 +390,20 @@ const Dashboard = () => {
     </div>
   );
 
+  const clearHistory = async () => {
+    if (!window.confirm("Are you sure you want to wipe your history and reset the map?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_V1}/zone/history/clear`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHistoryData([]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -407,7 +421,7 @@ const Dashboard = () => {
           </p>
 
           <div className="max-w-3xl mx-auto mb-8 animate-fade-in px-4 md:px-0">
-            <div 
+            <div
               className={`bg-orange-50 border border-orange-200 rounded-2xl p-4 md:p-6 text-left relative overflow-hidden shadow-sm transition-all duration-500 cursor-pointer ${isAlertExpanded ? 'max-h-[500px]' : 'max-h-[80px] md:max-h-[100px]'}`}
               onClick={() => setIsAlertExpanded(!isAlertExpanded)}
             >
@@ -423,10 +437,10 @@ const Dashboard = () => {
                       {isAlertExpanded ? "VIEW LESS" : "TAP TO ENLARGE"}
                     </span>
                   </div>
-                  
+
                   <div className={`transition-all duration-500 overflow-hidden ${isAlertExpanded ? 'opacity-100 mt-4' : 'opacity-0 max-h-0'}`}>
                     <div className="text-orange-800/80 text-sm leading-relaxed font-semibold">
-                      You are currently being tracked by our smart platform to ensure crowd safety. 
+                      You are currently being tracked by our smart platform to ensure crowd safety.
                       <br /><br />
                       <span className="text-orange-900 font-bold">Want to track family?</span> If you are with family members, please either:
                       <ul className="list-disc ml-5 mt-2 space-y-2">
@@ -506,38 +520,38 @@ const Dashboard = () => {
                       className="rounded-xl w-full border-2 border-orange-100"
                     />
                     <div className="absolute inset-0">
-                        {zones.map((zone) => {
-                          // Pre-defined coordinates for better distribution across the Ujjain map image
-                          const positions = {
-                            1: { top: "25%", left: "12%" }, // Nagada area - Moved Down
-                            2: { top: "15%", left: "45%" }, // Mahidpur area - Far Top Center
-                            3: { top: "42%", left: "55%" }, // Ghatiya area - Central-Right
-                            4: { top: "35%", left: "82%" }, // Tarana area - Far Right
-                            5: { top: "75%", left: "28%" }, // Badnagar area - Bottom Left
-                            6: { top: "75%", left: "58%" }  // Ujjain South - Moved Up
-                          };
-                          
-                          const pos = positions[zone.zone_id] || { 
-                            top: `${15 + (zone.zone_id % 5) * 15}%`, 
-                            left: `${15 + (zone.zone_id % 3) * 25}%` 
-                          };
+                      {zones.map((zone) => {
+                        // Pre-defined coordinates for better distribution across the Ujjain map image
+                        const positions = {
+                          1: { top: "25%", left: "12%" }, // Nagada area - Moved Down
+                          2: { top: "15%", left: "45%" }, // Mahidpur area - Far Top Center
+                          3: { top: "42%", left: "55%" }, // Ghatiya area - Central-Right
+                          4: { top: "35%", left: "82%" }, // Tarana area - Far Right
+                          5: { top: "75%", left: "28%" }, // Badnagar area - Bottom Left
+                          6: { top: "75%", left: "58%" }  // Ujjain South - Moved Up
+                        };
 
-                          return (
-                            <div
-                              key={zone.zone_id}
-                              className={`absolute w-12 h-12 rounded-full text-white flex items-center justify-center font-bold cursor-pointer shadow-lg border-2 border-white transition-all duration-300 hover:scale-110 ${getDensityStatus(zone.density).color
-                                }`}
-                              style={{
-                                top: pos.top,
-                                left: pos.left,
-                                transform: "translate(-50%, -50%)",
-                              }}
-                              onClick={() => setSelectedZone(zone)}
-                            >
-                              {zone.zone_id}
-                            </div>
-                          );
-                        })}
+                        const pos = positions[zone.zone_id] || {
+                          top: `${15 + (zone.zone_id % 5) * 15}%`,
+                          left: `${15 + (zone.zone_id % 3) * 25}%`
+                        };
+
+                        return (
+                          <div
+                            key={zone.zone_id}
+                            className={`absolute w-12 h-12 rounded-full text-white flex items-center justify-center font-bold cursor-pointer shadow-lg border-2 border-white transition-all duration-300 hover:scale-110 ${getDensityStatus(zone.density).color
+                              }`}
+                            style={{
+                              top: pos.top,
+                              left: pos.left,
+                              transform: "translate(-50%, -50%)",
+                            }}
+                            onClick={() => setSelectedZone(zone)}
+                          >
+                            {zone.zone_id}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -620,99 +634,174 @@ const Dashboard = () => {
         {activeTab === "history" && (
           <div className="pb-24 space-y-8 animate-fade-in">
             <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
-               <div className="p-8 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                  <div>
-                    <h2 className="text-3xl font-black text-gray-900">Movement History</h2>
-                    <p className="text-gray-500 font-medium">Detailed log of zone entries and exits</p>
-                  </div>
-                  <div className="flex bg-gray-100 p-1 rounded-xl">
-                    <button 
-                      onClick={() => { setHistoryType("self"); setSelectedMember(null); fetchHistory(); }}
-                      className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${historyType === "self" ? "bg-white text-orange-600 shadow-sm" : "text-gray-500"}`}
-                    >
-                      Self Tracking
-                    </button>
-                    <button 
-                      onClick={() => setHistoryType("family")}
-                      className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${historyType === "family" ? "bg-white text-orange-600 shadow-sm" : "text-gray-500"}`}
-                    >
-                      Family Tracking
-                    </button>
-                  </div>
-               </div>
+              <div className="p-8 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div>
+                  <h2 className="text-3xl font-black text-gray-900">Movement History</h2>
+                  <p className="text-gray-500 font-medium">Detailed log of zone entries and exits</p>
+                </div>
+                {historyType === "self" && (
+                  <button 
+                    onClick={clearHistory}
+                    className="flex items-center gap-3 px-6 py-2.5 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-100 hover:bg-rose-600 hover:text-white transition-all shadow-sm group"
+                  >
+                    <Trash2 size={12} className="group-hover:animate-bounce" /> Wipe Journey
+                  </button>
+                )}
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                  <button
+                    onClick={() => { setHistoryType("self"); setSelectedMember(null); fetchHistory(); }}
+                    className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${historyType === "self" ? "bg-white text-orange-600 shadow-sm" : "text-gray-500"}`}
+                  >
+                    Self Tracking
+                  </button>
+                  <button
+                    onClick={() => setHistoryType("family")}
+                    className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${historyType === "family" ? "bg-white text-orange-600 shadow-sm" : "text-gray-500"}`}
+                  >
+                    Family Tracking
+                  </button>
+                </div>
+              </div>
 
-               <div className="p-4 md:p-8">
-                 {historyType === "family" && (
-                   <div className="mb-8 flex flex-wrap gap-4">
-                     {familyMembers.length === 0 ? (
-                       <p className="text-gray-500 italic px-4">No family members associated. Add them in Profile.</p>
-                     ) : (
-                       familyMembers.map(member => (
-                         <button
-                           key={member.member_id}
-                           onClick={() => { setSelectedMember(member); fetchHistory(member.member_id); }}
-                           className={`px-5 py-3 rounded-2xl font-bold border-2 transition-all ${selectedMember?.member_id === member.member_id ? "bg-orange-600 border-orange-600 text-white shadow-lg" : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"}`}
-                         >
-                           {member.name}
-                         </button>
-                       ))
-                     )}
+              <div className="p-4 md:p-8">
+                {historyType === "family" && (
+                  <div className="mb-8 flex flex-wrap gap-4">
+                    {familyMembers.length === 0 ? (
+                      <p className="text-gray-500 italic px-4">No family members associated. Add them in Profile.</p>
+                    ) : (
+                      familyMembers.map(member => (
+                        <button
+                          key={member.member_id}
+                          onClick={() => { setSelectedMember(member); fetchHistory(member.member_id); }}
+                          className={`px-5 py-3 rounded-2xl font-bold border-2 transition-all ${selectedMember?.member_id === member.member_id ? "bg-orange-600 border-orange-600 text-white shadow-lg" : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"}`}
+                        >
+                          {member.name}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                   {/* Two-part history view */}
+                   <div className="space-y-10">
+                     {/* GPS Pings Section */}
+                     <div className="space-y-4">
+                       <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                         Automatic Tracking Log (Last 10 detected)
+                       </h3>
+                       <div className="overflow-x-auto rounded-3xl border border-gray-100 shadow-sm hide-scrollbar bg-white">
+                         <table className="w-full text-left min-w-[700px]">
+                           <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
+                             <tr>
+                               <th className="px-6 py-6 rounded-tl-3xl">Participant</th>
+                               <th className="px-6 py-6">Status Info</th>
+                               <th className="px-6 py-6">Coordinates</th>
+                               <th className="px-6 py-6">Detected At</th>
+                               <th className="px-6 py-6 rounded-tr-3xl text-center">Status</th>
+                             </tr>
+                           </thead>
+                           <tbody className="divide-y divide-gray-100">
+                             {historyData.filter(log => log.tracking_type === 'Live GPS Ping').length === 0 ? (
+                               <tr><td colSpan="5" className="px-6 py-10 text-center text-gray-400 font-medium italic">No GPS signals detected yet.</td></tr>
+                             ) : (
+                               historyData
+                                 .filter(log => log.tracking_type === 'Live GPS Ping')
+                                 .slice(-10)
+                                 .reverse()
+                                 .map((log, i) => (
+                                 <tr key={i} className="hover:bg-indigo-50/50 transition-colors group">
+                                   <td className="px-6 py-6 border-l-4 border-transparent group-hover:border-indigo-600 transition-all">
+                                      <div className="flex flex-col">
+                                        <span className="font-black text-slate-800 text-sm">{log.participant}</span>
+                                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Device Sync</span>
+                                      </div>
+                                   </td>
+                                   <td className="px-6 py-6">
+                                      <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-black text-[9px] uppercase tracking-widest border border-indigo-100 italic">Auto-Detected</span>
+                                   </td>
+                                   <td className="px-6 py-6">
+                                      <div className="flex flex-col gap-0.5 text-slate-500 font-bold text-[9px]">
+                                        <span>Lat: {log.latitude?.toFixed(5)}</span>
+                                        <span>Lng: {log.longitude?.toFixed(5)}</span>
+                                      </div>
+                                   </td>
+                                   <td className="px-6 py-6 text-xs font-black text-slate-500">{log.enter_time}</td>
+                                   <td className="px-6 py-6 text-center">
+                                      <div className="flex justify-center"><div className="h-2 w-2 rounded-full bg-green-500 animate-ping"></div></div>
+                                   </td>
+                                 </tr>
+                               ))
+                             )}
+                           </tbody>
+                         </table>
+                       </div>
+                     </div>
+
+                     {/* QR Registration Section */}
+                     <div className="space-y-4">
+                       <h3 className="text-xs font-black text-orange-400 uppercase tracking-widest flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-orange-600"></div>
+                         Manual Zone History (All QR scans)
+                       </h3>
+                       <div className="overflow-x-auto rounded-3xl border border-gray-100 shadow-sm hide-scrollbar bg-white">
+                         <table className="w-full text-left min-w-[700px]">
+                           <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
+                             <tr>
+                               <th className="px-6 py-6 rounded-tl-3xl">Participant</th>
+                               <th className="px-6 py-6">Last Zone</th>
+                               <th className="px-6 py-6">Current Zone</th>
+                               <th className="px-6 py-6">Enter Time</th>
+                               <th className="px-6 py-6">Leave Time</th>
+                               <th className="px-6 py-6 rounded-tr-3xl text-center">Duration</th>
+                             </tr>
+                           </thead>
+                           <tbody className="divide-y divide-gray-100">
+                             {historyData.filter(log => log.tracking_type !== 'Live GPS Ping' && log.current_zone !== 'Exit Point').length === 0 ? (
+                               <tr><td colSpan="6" className="px-6 py-20 text-center text-gray-400 font-medium italic">No QR scan records found.</td></tr>
+                             ) : (
+                               historyData
+                                 .filter(log => log.tracking_type !== 'Live GPS Ping' && log.current_zone !== 'Exit Point')
+                                 .reverse()
+                                 .map((log, i) => (
+                                 <tr key={i} className="hover:bg-orange-50/50 transition-colors group">
+                                   <td className="px-6 py-6 border-l-4 border-transparent group-hover:border-orange-500 transition-all">
+                                     <div className="flex flex-col">
+                                       <span className="font-black text-slate-800 text-sm">{log.participant}</span>
+                                       <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Devotee Tag</span>
+                                     </div>
+                                   </td>
+                                   <td className="px-6 py-6 font-bold text-slate-500 text-xs">{log.last_zone || "Entry Gate"}</td>
+                                   <td className="px-6 py-6">
+                                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-600 text-white font-black text-[10px] uppercase shadow-lg shadow-orange-600/20">
+                                       <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></div>
+                                       {log.current_zone}
+                                     </div>
+                                   </td>
+                                   <td className="px-6 py-6 text-xs font-black text-slate-500">{log.enter_time}</td>
+                                   <td className="px-6 py-6">
+                                     {log.leave_time ? (
+                                       <span className="text-xs font-black text-slate-500">{log.leave_time}</span>
+                                     ) : (
+                                       <span className="px-3 py-1 rounded-full bg-green-100 text-green-600 font-black text-[9px] uppercase tracking-widest border border-green-200">Live Active</span>
+                                     )}
+                                   </td>
+                                   <td className="px-6 py-6 text-center">
+                                     {log.duration_spent ? (
+                                       <span className="font-black text-slate-800 text-sm">{Math.floor(log.duration_spent / 60)}m {log.duration_spent % 60}s</span>
+                                     ) : (
+                                       <div className="flex justify-center"><div className="h-2 w-2 rounded-full bg-green-500 animate-ping"></div></div>
+                                     )}
+                                   </td>
+                                 </tr>
+                               ))
+                             )}
+                           </tbody>
+                         </table>
+                       </div>
+                     </div>
                    </div>
-                 )}
-
-                  <div className="overflow-x-auto rounded-3xl border border-gray-100 shadow-sm hide-scrollbar bg-white">
-                    <table className="w-full text-left min-w-[700px]">
-                      <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
-                        <tr>
-                          <th className="px-6 py-6 rounded-tl-3xl">Participant</th>
-                          <th className="px-6 py-6">Last Zone</th>
-                          <th className="px-6 py-6">Current Zone</th>
-                          <th className="px-6 py-6">Enter Time</th>
-                          <th className="px-6 py-6">Leave Time</th>
-                          <th className="px-6 py-6 rounded-tr-3xl text-center">Duration</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 italic-last-row">
-                        {historyData.length === 0 ? (
-                          <tr><td colSpan="6" className="px-6 py-20 text-center text-gray-400 font-medium italic">No movement records found.</td></tr>
-                        ) : (
-                          historyData.map((log, i) => (
-                            <tr key={i} className="hover:bg-orange-50/50 transition-colors group">
-                              <td className="px-6 py-6">
-                                <div className="flex flex-col">
-                                  <span className="font-black text-slate-800 text-sm">{log.participant}</span>
-                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Device Tracker</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-6 font-bold text-slate-500 text-xs">{log.last_zone || "Entry Gate"}</td>
-                              <td className="px-6 py-6">
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-600 text-white font-black text-[10px] uppercase shadow-lg shadow-orange-600/20">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></div>
-                                  {log.current_zone}
-                                </div>
-                              </td>
-                              <td className="px-6 py-6 text-xs font-black text-slate-500">{log.enter_time}</td>
-                              <td className="px-6 py-6">
-                                {log.leave_time ? (
-                                  <span className="text-xs font-black text-slate-500">{log.leave_time}</span>
-                                ) : (
-                                  <span className="px-3 py-1 rounded-full bg-green-100 text-green-600 font-black text-[9px] uppercase tracking-widest border border-green-200">Live Active</span>
-                                )}
-                              </td>
-                              <td className="px-6 py-6 text-center">
-                                {log.duration_spent ? (
-                                  <span className="font-black text-slate-800 text-sm">{Math.floor(log.duration_spent / 60)}m {log.duration_spent % 60}s</span>
-                                ) : (
-                                  <div className="flex justify-center"><div className="h-2 w-2 rounded-full bg-green-500 animate-ping"></div></div>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-               </div>
+              </div>
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ import {
   getZoneDensity,
   getUserZoneHistory,
   recordLiveLocation,
+  clearUserZoneHistory,
 } from "../controllers/zoneController.js";
 import authenticateClient from "../middlewares/authMiddleware.js";
 import {
@@ -30,5 +31,6 @@ router.post("/scan-qr", authenticateClient, getInfoFromQRScan);
 // Get zone history of a specific client
 router.get("/history", authenticateClient, getUserZoneHistory);
 router.post("/history", authenticateClient, getUserZoneHistory);
+router.delete("/history/clear", authenticateClient, clearUserZoneHistory);
 
 export default router;

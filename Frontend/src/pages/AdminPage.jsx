@@ -70,6 +70,12 @@ const AdminPage = () => {
     const BACKEND_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/admin`;
 
     useEffect(() => {
+        // Support direct tab linking via search params (e.g. /admin?tab=sos)
+        const params = new URLSearchParams(window.location.search);
+        const requestedTab = params.get('tab');
+        if (requestedTab && ['overview', 'users', 'bookings', 'density', 'alerts', 'sos'].includes(requestedTab)) {
+            setActiveTab(requestedTab);
+        }
         fetchDashboardData();
     }, []);
 

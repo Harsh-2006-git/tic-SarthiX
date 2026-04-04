@@ -4,6 +4,7 @@ import LocationLog from '../models/LocationLog.js';
 import GuardianMapping from '../models/GuardianMapping.js';
 import SOSAlert from '../models/SOSAlert.js';
 import Client from '../models/client.js';
+import { sendSOSEmail } from '../utils/emailService.js';
 
 const userSocketMap = new Map(); // userId -> socketId
 
@@ -103,6 +104,16 @@ export const initSocket = (server) => {
 
                 // 4. Notify Admins (broadcast to an 'admins' room or just broadcast)
                 io.emit('SOS_ADMIN_ALERT', alertData);
+
+                // 5. Send Email Alert in background (non-blocking)
+                const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+                if (adminEmail) {
+                    sendSOSEmail(adminEmail, {
+                        user,
+                        location: { lat, lng },
+                        nearbyServices: [] // Optional: fetch nearby services later if needed
+                    }).catch(emailErr => console.error('SOS Email failed:', emailErr.message));
+                }
 
                 console.log(`SOS Alert triggered by user ${userId}`);
             } catch (error) {

@@ -16,12 +16,14 @@ export default function ChatbotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [itinerary, setItinerary] = useState(null);
   const [error, setError] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const { toast } = useToast();
 
   const handleFormSubmit = async (data) => {
     setIsLoading(true);
     setError(null);
     setItinerary(null);
+    setFormOpen(false); // Close the form dialog
 
     const result = await getItinerary(data);
     if (result.error) {
@@ -383,9 +385,9 @@ export default function ChatbotPage() {
         <section className="container mx-auto px-6 py-4 max-w-4xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
 
-            <Dialog>
+            <Dialog open={formOpen} onOpenChange={setFormOpen}>
               <DialogTrigger asChild>
-                <div className="group relative cursor-pointer overflow-hidden rounded-[2.5rem] bg-white p-1 shadow-xl transition-all hover:shadow-orange-200/50 hover:-translate-y-2 transform duration-300 border border-white">
+                <div onClick={() => setFormOpen(true)} className="group relative cursor-pointer overflow-hidden rounded-[2.5rem] bg-white p-1 shadow-xl transition-all hover:shadow-orange-200/50 hover:-translate-y-2 transform duration-300 border border-white">
                   <div className="absolute inset-0 bg-slate-100 opacity-0 group-hover:opacity-10 transition-all duration-700" />
                   <div className="relative rounded-[2.2rem] bg-slate-50/20 p-8 text-center border-2 border-white h-full flex flex-col items-center justify-center">
                     <div className="mb-6 w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-slate-600 transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 border border-slate-50">
@@ -460,7 +462,7 @@ export default function ChatbotPage() {
                   Download PDF
                 </button>
               </div>
-              <div className="flex-1 max-h-[600px] overflow-y-auto p-8 custom-scrollbar bg-slate-50/20">
+              <div className="flex-1 p-8 bg-slate-50/20">
                 <ItineraryDisplay itinerary={itinerary} isLoading={isLoading} error={error} />
               </div>
             </div>

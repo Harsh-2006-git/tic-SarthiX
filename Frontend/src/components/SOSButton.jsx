@@ -1,61 +1,83 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Shield, X, AlertTriangle, ChevronRight, PhoneCall } from 'lucide-react';
 import { API_V1 } from '../config/api';
 
 const SOSButton = () => {
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [status, setStatus] = useState('idle'); // idle, sending, success, error
     const [error, setError] = useState(null);
+    const [cachedLocation, setCachedLocation] = useState(null);
+
+    // Pre-fetch location the moment the modal opens to save time
+    const preFetchLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    setCachedLocation({
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude
+                    });
+                },
+                (err) => console.log("Pre-fetch GPS wait/failed"),
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
+            );
+        }
+    };
 
     const handleSOS = async () => {
         setStatus('sending');
         setError(null);
 
-        if (!navigator.geolocation) {
-            setError("Geolocation is not supported by your browser");
-            setStatus('error');
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(async (position) => {
+        const triggerBackend = async (lat, lng) => {
             try {
-                const { latitude, longitude } = position.coords;
                 const token = localStorage.getItem('token');
-
                 const response = await fetch(`${API_V1}/admin/sos`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ lat: latitude, lng: longitude })
+                    body: JSON.stringify({ lat, lng })
                 });
 
                 if (response.ok) {
                     setStatus('success');
-                    // Automatically close after 5 seconds of success
                     setTimeout(() => {
                         setIsOpen(false);
                         setStatus('idle');
-                    }, 5000);
-                } else {
-                    throw new Error("Failed to reach emergency services");
-                }
+                        navigate('/admin?tab=sos');
+                    }, 1000);
+                } else throw new Error("Emergency link failed");
             } catch (err) {
                 setError(err.message);
                 setStatus('error');
             }
-        }, (err) => {
-            setError("Geolocation permission denied. Please enable location to call SOS.");
-            setStatus('error');
-        });
+        };
+
+        // Use pre-fetched location if available, else fetch now
+        if (cachedLocation) {
+            await triggerBackend(cachedLocation.latitude, cachedLocation.longitude);
+        } else {
+            if (!navigator.geolocation) {
+                setError("Geolocation missing");
+                setStatus('error');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                async (p) => await triggerBackend(p.coords.latitude, p.coords.longitude),
+                (e) => { setError("GPS Signal Required"); setStatus('error'); },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
     };
 
     return (
         <>
             {/* Pulsing Floating Button */}
             <button
-                onClick={() => setIsOpen(true)}
+                onClick={() => { setIsOpen(true); preFetchLocation(); }}
                 className="fixed bottom-24 right-6 z-[100] w-14 h-14 bg-red-600 rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] active:scale-95 transition-all animate-pulse hover:bg-red-700 group overflow-hidden"
             >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
@@ -108,7 +130,7 @@ const SOSButton = () => {
                                 <div className="py-10 flex flex-col items-center justify-center space-y-6">
                                     <div className="w-16 h-16 border-4 border-red-100 border-t-red-600 rounded-full animate-spin"></div>
                                     <div className="text-center">
-                                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter italic">Locating & Dispatching...</h3>
+                                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter italic">BROADCASTING EMERGENCY...</h3>
                                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Establishing Secure Satellite Link</p>
                                     </div>
                                 </div>

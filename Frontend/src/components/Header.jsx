@@ -37,11 +37,14 @@ const Header = () => {
     useEffect(() => {
         const savedUser = localStorage.getItem("user");
         if (savedUser) setUser(JSON.parse(savedUser));
-        const match = document.cookie.match(/googtrans=\/en\/([a-z]{2,})/);
-        if (match) {
-            const found = LANGUAGES.find(l => l.code === match[1]);
-            if (found) setActiveLang(found);
-        }
+        
+        // Language restoration from localStorage or cookie
+        const savedLangCode = localStorage.getItem("google-translate-lang");
+        const cookieMatch = document.cookie.match(/googtrans=\/en\/([a-z]{2,})/);
+        const activeCode = savedLangCode || (cookieMatch ? cookieMatch[1] : 'en');
+        
+        const found = LANGUAGES.find(l => l.code === activeCode);
+        if (found) setActiveLang(found);
     }, []);
 
     useEffect(() => {
@@ -53,9 +56,12 @@ const Header = () => {
     useEffect(() => {
         const killBanner = () => {
             const banner = document.querySelector('.goog-te-banner-frame');
-            if (banner) banner.style.display = 'none';
+            if (banner) {
+                // If the user feels the header is covered, we allow the body top 
+                // to work naturally and our header top logic (below) will sync it.
+                // We only hide it if it's explicitly broken.
+            }
         };
-        killBanner();
         const observer = new MutationObserver(killBanner);
         observer.observe(document.body, { childList: true, subtree: true });
         return () => observer.disconnect();
@@ -78,7 +84,12 @@ const Header = () => {
         window.googleTranslateElementInit = () => {
             if (window.google && window.google.translate && window.google.translate.TranslateElement) {
                 new window.google.translate.TranslateElement(
-                    { pageLanguage: 'en', includedLanguages: 'en,hi,mr,gu,ta,te,bn,kn,ml,pa,ur,or', autoDisplay: false },
+                    { 
+                        pageLanguage: 'en', 
+                        includedLanguages: 'en,hi,mr,gu,ta,te,bn,kn,ml,pa,ur,or', 
+                        autoDisplay: false,
+                        layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE 
+                    },
                     'google_translate_element_hidden'
                 );
             }
@@ -89,35 +100,40 @@ const Header = () => {
             s.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
             s.async = true;
             document.body.appendChild(s);
-        } else if (window.googleTranslateElementInit) {
-            setTimeout(window.googleTranslateElementInit, 300);
         }
     }, []);
 
     const changeLanguage = (lang) => {
         setActiveLang(lang);
         setIsLangOpen(false);
-        if (lang.code === "en") {
-            document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
-            document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + location.hostname;
-        } else {
-            document.cookie = `googtrans=/en/${lang.code}; path=/`;
-            document.cookie = `googtrans=/en/${lang.code}; path=/; domain=` + window.location.hostname;
-        }
+        localStorage.setItem("google-translate-lang", lang.code);
+        
+        const setCookie = (code) => {
+            const domain = window.location.hostname;
+            const domainParts = domain.split('.');
+            const mainDomain = domainParts.length > 2 ? domainParts.slice(-2).join('.') : domain;
+            
+            if (code === "en") {
+                document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+                document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${mainDomain}`;
+                document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`;
+            } else {
+                document.cookie = `googtrans=/en/${code}; path=/`;
+                document.cookie = `googtrans=/en/${code}; path=/; domain=.${mainDomain}`;
+                document.cookie = `googtrans=/en/${code}; path=/; domain=${domain}`;
+            }
+        };
+
+        setCookie(lang.code);
+
         const gtCombo = document.querySelector('.goog-te-combo');
         if (gtCombo) {
             gtCombo.value = lang.code;
             gtCombo.dispatchEvent(new Event('change'));
-            if (lang.code === "en") {
-                const iframe = document.querySelector('.goog-te-banner-frame');
-                if (iframe) {
-                    const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    const restoreBtn = innerDoc.getElementById('goog-te-button2');
-                    if (restoreBtn) restoreBtn.click();
-                } else {
-                    setTimeout(() => window.location.reload(), 100);
-                }
-            }
+            // Small delay to ensure translation triggers before any potential reload
+            setTimeout(() => {
+                if (lang.code === "en") window.location.reload();
+            }, 100);
         } else {
             window.location.reload();
         }
@@ -126,6 +142,7 @@ const Header = () => {
     const handleLogout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("google-translate-lang"); // Reset on logout if desired
         window.location.href = "/auth";
     };
 
@@ -151,8 +168,14 @@ const Header = () => {
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 20);
         window.addEventListener("scroll", handleScroll);
+        // Nudge Google Translate on route changes
+        const gtCombo = document.querySelector('.goog-te-combo');
+        if (gtCombo && activeLang.code !== 'en') {
+            gtCombo.value = activeLang.code;
+            gtCombo.dispatchEvent(new Event('change'));
+        }
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [location.pathname, activeLang.code]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -179,8 +202,15 @@ const Header = () => {
                 .hide-scrollbar::-webkit-scrollbar { display: none; }
                 body { overflow-x: hidden; width: 100%; }
                 #google_translate_element_hidden { display: none !important; }
-                .goog-te-banner-frame { display: none !important; }
+                .goog-te-banner-frame { 
+                    display: block !important; 
+                }
                 .goog-te-balloon-frame { display: none !important; }
+                .goog-logo-link { display: none !important; }
+                .goog-te-gadget { color: transparent !important; }
+                .goog-te-gadget span { display: none !important; }
+                #goog-gt-tt { display: none !important; visibility: hidden !important; }
+                .goog-te-spinner-pos { display: none !important; }
                 font { background-color: transparent !important; box-shadow: none !important; }
             `}} />
 

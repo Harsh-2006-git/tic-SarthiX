@@ -243,19 +243,22 @@ export const getUserZoneHistory = async (req, res) => {
       };
     }
 
-    // Fetch scan history
+    // Fetch scan history with Client included
     const scans = await ZoneTracker.findAll({
       where: scanWhere,
       include: [
         { model: Zone, as: "currentZone", attributes: ["name"] },
         { model: Zone, as: "lastZone", attributes: ["name"] },
-        { model: FamilyMember, as: "familyMember", attributes: ["name"] }
+        { model: FamilyMember, as: "familyMember", attributes: ["name"] },
+        { model: Client, as: "client", attributes: ["name"] }
       ],
       order: [["scanned_at", "ASC"]],
     });
 
+    // All records (no filtering) to allow showing Live GPS updates too
     const history = scans.map((scan, i) => {
       const nextScan = scans[i + 1];
+      const isHandover = scan.last_zone_id !== scan.current_zone_id;
 
       const enterTime = new Date(scan.scanned_at).toLocaleString("en-IN", {
         timeZone: "Asia/Kolkata",
@@ -286,14 +289,15 @@ export const getUserZoneHistory = async (req, res) => {
         : null;
 
       return {
-        participant: scan.familyMember ? scan.familyMember.name : "Primary User",
-        last_zone: scan.lastZone ? scan.lastZone.name : null,
-        current_zone: scan.currentZone ? scan.currentZone.name : "Exit",
+        participant: scan.familyMember ? scan.familyMember.name : (scan.client && scan.client.name ? scan.client.name : "Master Devotee"),
+        last_zone: scan.lastZone ? scan.lastZone.name : (isHandover ? "Outer Perimeter" : "No Zone Change"),
+        current_zone: scan.currentZone ? scan.currentZone.name : (isHandover ? "Exit Point" : "Staying in Zone"),
         latitude: scan.latitude,
         longitude: scan.longitude,
         enter_time: enterTime,
         leave_time: leaveTime,
         duration_spent: durationSpent,
+        tracking_type: isHandover ? "Terminal Scan" : "Live GPS Ping"
       };
     });
     res.json({ client_id, history, type: targetMemberId ? 'family_member' : (req.query.type || 'combined') });
@@ -332,5 +336,16 @@ export const recordLiveLocation = async (req, res) => {
   } catch (error) {
     console.error("Loc logging error:", error);
     res.status(500).json({ message: "Sync failed" });
+  }
+};
+
+export const clearUserZoneHistory = async (req, res) => {
+  try {
+    const { client_id } = req.user;
+    await ZoneTracker.destroy({ where: { client_id } });
+    res.json({ message: "Journey history cleared successfully" });
+  } catch (error) {
+    console.error("Clear History Error:", error);
+    res.status(500).json({ message: "Failed to clear history" });
   }
 };

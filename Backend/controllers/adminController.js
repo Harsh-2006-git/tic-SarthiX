@@ -7,6 +7,8 @@ import SOSAlert from "../models/SOSAlert.js";
 import { sequelize } from "../config/database.js";
 import { Op } from "sequelize";
 
+import { sendSOSEmail } from "../utils/emailService.js";
+
 export const getAdminStats = async (req, res) => {
     try {
         const totalUsers = await Client.count();
@@ -158,13 +160,12 @@ export const handleSOS = async (req, res) => {
             nearby_data: JSON.stringify([])
         });
 
-        // Send Email using emailService
-        const { sendSOSEmail } = await import('../utils/emailService.js');
-        await sendSOSEmail(process.env.SMTP_USER, {
+        // Send Email using emailService (Background check - fire and forget)
+        sendSOSEmail(process.env.SMTP_USER, {
             user,
             location: { lat, lng },
             nearbyServices: []
-        });
+        }).catch(err => console.error("Background SOS Email Error:", err));
 
         res.json({ success: true, message: "SOS Alert Dispatched to Authorities" });
     } catch (error) {

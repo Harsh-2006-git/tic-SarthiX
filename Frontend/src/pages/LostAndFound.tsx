@@ -40,6 +40,7 @@ interface FormDataType {
 }
 
 interface ZoneHistory {
+  participant: string;
   last_zone: string | null;
   current_zone: string;
   enter_time: string;
@@ -47,6 +48,7 @@ interface ZoneHistory {
   duration_spent: number | null;
   latitude?: number | null;
   longitude?: number | null;
+  tracking_type?: 'Terminal Scan' | 'Live GPS Ping';
 }
 
 interface LocationTrackingData {
@@ -131,7 +133,7 @@ const LostAndFound: React.FC = () => {
       const res = await axios(config);
       setLocationHistory(res.data);
       
-      if (trackingMode === "own" && res.data.history && res.data.history.length > 0) {
+      if (res.data.history && res.data.history.length > 0) {
         setTimeout(() => initMap(res.data.history), 100);
       }
     } catch (err) {
@@ -203,8 +205,14 @@ const LostAndFound: React.FC = () => {
   const initMap = (history: ZoneHistory[]) => {
     if (!mapRef.current) return;
 
+    const coords: [number, number][] = history
+      .filter(h => h.latitude && h.longitude && h.latitude !== 0)
+      .map(h => [h.latitude!, h.longitude!]);
+
     if (!mapInstance.current) {
-      mapInstance.current = L.map(mapRef.current).setView([23.1765, 75.7849], 13);
+      // Use the last coordinate as the center if available, otherwise Ujjain
+      const center: [number, number] = coords.length > 0 ? coords[coords.length - 1] : [23.1765, 75.7849];
+      mapInstance.current = L.map(mapRef.current).setView(center, 15);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© OpenStreetMap contributors'
       }).addTo(mapInstance.current);
@@ -214,10 +222,6 @@ const LostAndFound: React.FC = () => {
     if (polylineRef.current) polylineRef.current.remove();
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
-
-    const coords: [number, number][] = history
-      .filter(h => h.latitude && h.longitude)
-      .map(h => [h.latitude!, h.longitude!]);
 
     if (coords.length > 0) {
       polylineRef.current = L.polyline(coords, { color: '#f97316', weight: 5, opacity: 0.7 }).addTo(mapInstance.current);
@@ -236,7 +240,24 @@ const LostAndFound: React.FC = () => {
         markersRef.current.push(marker as any);
       });
 
+      // Fit bounds and zoom in on the latest point
       mapInstance.current.fitBounds(polylineRef.current.getBounds(), { padding: [50, 50] });
+    }
+  };
+
+  const clearHistory = async () => {
+    if (!window.confirm("Are you sure you want to wipe your entire movement history? This cannot be undone.")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${BASE_URL}/zone/history/clear`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setLocationHistory(null);
+      setSuccess("Your journey path has been reset successfully.");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error("Clear History Error:", err);
+      setError("Failed to clear history.");
     }
   };
 
@@ -584,7 +605,7 @@ const LostAndFound: React.FC = () => {
                   <button onClick={resetTrackingForm} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all">New Search</button>
                 </div>
 
-                {trackingMode === "own" && (
+                {locationHistory.history.some(h => h.latitude && h.longitude) && (
                   <div className="bg-white rounded-[2.5rem] p-3 shadow-xl border border-gray-100 mb-8 overflow-hidden transform transition-all hover:shadow-2xl">
                     <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -602,56 +623,165 @@ const LostAndFound: React.FC = () => {
                       </div>
                     </div>
                     <div ref={mapRef} className="w-full h-[400px] rounded-[1.5rem] z-0 overflow-hidden shadow-inner border border-gray-50" />
+                    {trackingMode === "own" && (
+                    <div className="p-4 flex justify-end">
+                      <button 
+                        onClick={clearHistory}
+                        className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-100 hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <Trash2 size={12} /> Wipe Journey History
+                      </button>
+                    </div>
+                    )}
                   </div>
                 )}
 
-                <div className="space-y-6">
-                  {locationHistory.history.length === 0 ? (
-                    <div className="bg-white p-12 rounded-[2.5rem] border border-dashed border-slate-200 text-center text-slate-400 font-bold uppercase tracking-widest">
-                      No Movement Recorded Today
+                <div className="space-y-12">
+                  {/* Automatic History Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                       <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></div>
+                       Background Location Insights (Last 10 detected)
+                    </h3>
+                    <div className="overflow-x-auto rounded-[2rem] border border-gray-100 shadow-xl bg-white hide-scrollbar">
+                      <table className="w-full text-left min-w-[800px]">
+                        <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
+                          <tr>
+                            <th className="px-6 py-6 rounded-tl-[2rem]">Participant</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Last Zone</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Current Zone / GPS</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Enter Time</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Leave Time</th>
+                            <th className="px-6 py-6 rounded-tr-[2rem] text-center font-black uppercase tracking-widest text-[9px]">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {locationHistory.history.filter(r => r.tracking_type === 'Live GPS Ping').length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-10 text-center text-slate-400 font-bold uppercase tracking-widest">
+                                No Automatic Movement Detected
+                              </td>
+                            </tr>
+                          ) : (
+                            locationHistory.history
+                              .filter(record => record.tracking_type === 'Live GPS Ping')
+                              .slice(-10)
+                              .reverse()
+                              .map((record, idx) => (
+                              <tr key={idx} className="hover:bg-orange-50/50 transition-colors group">
+                                <td className="px-6 py-6 border-l-4 border-transparent group-hover:border-orange-500 transition-all">
+                                  <div className="flex flex-col">
+                                    <span className="font-black text-slate-800 text-sm italic group-hover:not-italic transition-all">
+                                      {record.participant || "Devotee"}
+                                    </span>
+                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Automatic GPS</span>
+                                  </div>
+                                </td>
+
+                                <td className="px-6 py-6">
+                                  <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">online location tracked</span>
+                                    <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Ping Signal 📡</span>
+                                  </div>
+                                </td>
+
+                                <td className="px-6 py-6 text-xs text-slate-500 font-bold">
+                                    <div className="flex flex-col gap-1">
+                                       <span className="text-[9px] font-black text-indigo-700">LAT: {record.latitude?.toFixed(5)}</span>
+                                       <span className="text-[9px] font-black text-indigo-700">LNG: {record.longitude?.toFixed(5)}</span>
+                                    </div>
+                                </td>
+
+                                <td className="px-6 py-6 text-xs font-black text-slate-500">{record.enter_time}</td>
+                                <td className="px-6 py-6">--</td>
+                                <td className="px-6 py-6 text-center font-black text-slate-300 text-[10px] uppercase tracking-widest italic">Nil-Ping</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-                  ) : (
-                    locationHistory.history.map((record, idx) => (
-                      <div key={idx} className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden group">
-                        <div className="flex flex-col lg:flex-row">
-                          <div className="bg-slate-900 lg:w-36 p-2 lg:p-5 flex flex-col justify-center items-center text-white border-b lg:border-b-0 lg:border-r border-white/10 group-hover:bg-orange-600 transition-colors shrink-0">
-                            <span className="text-[8px] lg:text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-0.5 lg:mb-2 text-center">Active Zone</span>
-                            <h4 className="text-[10px] md:text-xs font-black uppercase text-center leading-tight break-words max-w-full px-1">{record.current_zone}</h4>
-                          </div>
-                          <div className="flex-grow p-3 lg:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Entry Insight</span>
-                              <div className="flex items-start gap-2 text-slate-800">
-                                <Clock size={14} className="text-orange-500 shrink-0 mt-0.5 md:w-4 md:h-4" />
-                                <span className="font-black text-[11px] md:text-sm break-words">{record.enter_time}</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Exit Point</span>
-                              <div className="flex items-start gap-2 text-slate-800">
-                                <MapPin size={14} className="text-orange-500 shrink-0 mt-0.5 md:w-4 md:h-4" />
-                                <span className="font-black text-[11px] md:text-sm break-words">{record.leave_time || "--:--"}</span>
-                              </div>
-                            </div>
-                            <div className="sm:col-span-2 lg:col-span-1 flex flex-col justify-center bg-slate-50 p-3 lg:p-4 rounded-2xl border border-slate-100">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Time Elapsed</span>
-                              <span className="font-black text-orange-600 text-sm md:text-base">
-                                {record.duration_spent ? formatDuration(record.duration_spent) : "Currently In"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        {record.last_zone && (
-                          <div className="bg-orange-50/50 p-2.5 px-6 flex flex-wrap items-center gap-2 lg:gap-3 border-t border-orange-100">
-                            <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Route Flow:</span>
-                            <span className="text-[10px] font-black text-slate-600 uppercase truncate max-w-[120px] sm:max-w-none">{record.last_zone}</span>
-                            <span className="text-orange-300">→</span>
-                            <span className="text-[10px] font-black text-orange-600 uppercase truncate max-w-[120px] sm:max-w-none">{record.current_zone}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
+                  </div>
+
+                  {/* Official Record Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                       <div className="w-2 h-2 rounded-full bg-orange-600"></div>
+                       Sacred Zone Registrations (Via QR Scans)
+                    </h3>
+                    <div className="overflow-x-auto rounded-[2rem] border border-gray-100 shadow-xl bg-white hide-scrollbar">
+                      <table className="w-full text-left min-w-[800px]">
+                        <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
+                          <tr>
+                            <th className="px-6 py-6 rounded-tl-[2rem]">Participant</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Last Zone</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Current Zone</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Enter Time</th>
+                            <th className="px-6 py-6 font-black uppercase tracking-widest text-[9px]">Leave Time</th>
+                            <th className="px-6 py-6 rounded-tr-[2rem] text-center font-black uppercase tracking-widest text-[9px]">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 italic-last-row">
+                          {locationHistory.history.filter(r => r.tracking_type !== 'Live GPS Ping' && r.current_zone !== 'Exit Point').length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">
+                                No Official Scans Found.
+                              </td>
+                            </tr>
+                          ) : (
+                            locationHistory.history
+                              .filter(record => record.tracking_type !== 'Live GPS Ping' && record.current_zone !== 'Exit Point')
+                              .reverse()
+                              .map((record, idx) => (
+                              <tr key={idx} className="hover:bg-orange-50/50 transition-colors group">
+                                <td className="px-6 py-6 border-l-4 border-transparent group-hover:border-orange-500 transition-all">
+                                  <div className="flex flex-col">
+                                    <span className="font-black text-slate-800 text-sm italic group-hover:not-italic transition-all">
+                                      {record.participant || "Devotee"}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">QR Registered Scan</span>
+                                  </div>
+                                </td>
+
+                                <td className="px-6 py-6">
+                                  <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">{record.last_zone || 'Entry Gate'}</span>
+                                </td>
+
+                                <td className="px-6 py-6">
+                                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-600 text-white font-black text-[10px] uppercase shadow-lg shadow-orange-600/20 transition-transform group-hover:scale-105">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></div>
+                                    {record.current_zone}
+                                  </div>
+                                </td>
+
+                                <td className="px-6 py-6 text-xs font-black text-slate-500">{record.enter_time}</td>
+
+                                <td className="px-6 py-6">
+                                  {record.leave_time ? (
+                                    <span className="text-xs font-black text-slate-500">{record.leave_time}</span>
+                                  ) : (
+                                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-600 font-black text-[9px] uppercase tracking-widest border border-emerald-200">Currently In</span>
+                                  )}
+                                </td>
+
+                                <td className="px-6 py-6 text-center">
+                                  {record.duration_spent ? (
+                                    <span className="font-black text-slate-800 text-sm">
+                                      {formatDuration(record.duration_spent)}
+                                    </span>
+                                  ) : (
+                                    <div className="flex justify-center">
+                                      <div className="h-2 w-2 rounded-full bg-green-500 animate-ping"></div>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

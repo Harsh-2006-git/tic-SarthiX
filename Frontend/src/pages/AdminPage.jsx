@@ -67,7 +67,7 @@ const AdminPage = () => {
 
     const [customAlert, setCustomAlert] = useState(templates.crowd);
 
-    const BACKEND_URL = 'http://localhost:3001/api/v1/admin';
+    const BACKEND_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/admin`;
 
     useEffect(() => {
         fetchDashboardData();
@@ -179,10 +179,11 @@ const AdminPage = () => {
         const normalizedPath = path.startsWith('/') ? path : `/${path}`;
         // If the path doesn't already contain /uploads/ and isn't a direct filename that should be in uploads
         // Note: lostFoundController stores just filename, while authController stores /uploads/filename
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
         if (!normalizedPath.startsWith('/uploads/')) {
-            return `http://localhost:3001/uploads${normalizedPath}`;
+            return `${baseUrl}/uploads${normalizedPath}`;
         }
-        return `http://localhost:3001${normalizedPath}`;
+        return `${baseUrl}${normalizedPath}`;
     };
 
     const tabs = [

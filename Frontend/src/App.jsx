@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Auth from "./pages/auth";
 import Home from "./pages/index1";
 import LostAndFound from "./pages/LostAndFound";
@@ -27,6 +27,7 @@ import AlertBanner from "./components/AlertBanner";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -95,7 +96,7 @@ function App() {
         <Route path="*" element={<Navigate to="/auth" />} />
 
       </Routes>
-      <AlertBanner />
+      {location.pathname !== '/auth' && <AlertBanner />}
     </div>
   );
 }

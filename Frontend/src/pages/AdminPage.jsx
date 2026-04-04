@@ -65,6 +65,8 @@ const AdminPage = () => {
         }
     };
 
+    const [customAlert, setCustomAlert] = useState(templates.crowd);
+
     const BACKEND_URL = 'http://localhost:3001/api/v1/admin';
 
     useEffect(() => {
@@ -197,7 +199,7 @@ const AdminPage = () => {
         <div className="min-h-screen bg-[#f8fafc] text-slate-800">
             <Header />
 
-            <div className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
+            <div className={`transition-all duration-500 pb-20 px-4 md:px-8 max-w-7xl mx-auto ${alerts.length > 0 ? 'pt-48' : 'pt-24'}`}>
                 {/* Admin Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                     <div>
@@ -260,18 +262,18 @@ const AdminPage = () => {
                         ) : activeTab === 'overview' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 {/* Stats Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8">
                                     {[
                                         { label: 'Total Devotees', val: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                                        { label: 'Active Bookings', val: stats.activeTickets, icon: Ticket, color: 'text-orange-600', bg: 'bg-orange-50' },
-                                        { label: 'Reported Items', val: stats.reportedItems, icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                                        { label: 'Active Bookings', val: stats.totalCapacity, icon: Ticket, color: 'text-orange-600', bg: 'bg-orange-50' },
+                                        { label: 'Reported Items', val: stats.totalLostItems, icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                                     ].map((s, idx) => (
                                         <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all group">
                                             <div className={`${s.bg} ${s.color} w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                                                 <s.icon size={20} />
                                             </div>
                                             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{s.label}</p>
-                                            <h3 className="text-2xl font-black text-slate-800">{s.val}</h3>
+                                            <h3 className="text-2xl font-black text-slate-800">{s.val || 0}</h3>
                                         </div>
                                     ))}
                                 </div>

@@ -73,7 +73,7 @@ const AlertBanner = () => {
 
     return (
         <div className={`fixed top-[70px] left-0 w-full z-40 ${style.bg} ${style.shadow} border-b border-white/10 transition-all duration-500 animate-in slide-in-from-top fill-mode-both`}>
-            <div className="max-w-[1500px] mx-auto px-4 sm:px-12 py-3 flex items-center justify-between gap-4">
+            <div className="max-w-[1500px] mx-auto px-4 sm:px-12 py-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 overflow-hidden">
                     <div className={`w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 ${style.animate}`}>
                         <Icon className="text-white" size={16} />
@@ -85,7 +85,7 @@ const AlertBanner = () => {
                             </span>
                             <h4 className="font-black text-white text-sm truncate uppercase tracking-tighter">{firstAlert.title}</h4>
                         </div>
-                        <p className="text-xs text-white/90 font-medium line-clamp-1">{firstAlert.message}</p>
+                        <p className="text-xs text-white/90 font-medium line-clamp-1 mt-1.5">{firstAlert.message}</p>
                     </div>
                 </div>
 

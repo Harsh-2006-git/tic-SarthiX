@@ -159,6 +159,112 @@ export const sendOTPEmail = async (email, otp) => {
 };
 
 /**
+ * Send SOS Emergency Email to Admin
+ */
+export const sendSOSEmail = async (adminEmail, sosData) => {
+    const { user, location, nearbyServices } = sosData;
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`;
+    const logoUrl = "https://img.freepik.com/premium-vector/sadhu-sitting-meditating-isolated_1076263-601.jpg?w=740";
+
+    const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>SOS Dispatch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; padding: 40px 0;">
+        <tr>
+            <td>
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 32px; overflow: hidden; border-collapse: collapse; box-shadow: 0 40px 100px rgba(0,0,0,0.5);">
+                    <!-- Brand Header -->
+                    <tr>
+                        <td align="center" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); padding: 60px 40px; border-bottom: 8px solid #991b1b;">
+                            <div style="background: #ffffff; color: #ef4444; padding: 8px 18px; border-radius: 50px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; display: inline-block; margin-bottom: 25px;">Active Emergency</div>
+                            <div style="width: 100px; height: 100px; background: rgba(255,255,255,0.15); border-radius: 50%; padding: 5px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.3);">
+                                <img src="${logoUrl}" alt="Ujjain Yatra Logo" width="100" height="100" style="display: block; border-radius: 50%; object-fit: cover;" />
+                            </div>
+                            <h1 style="margin: 0; font-size: 34px; font-weight: 900; color: #ffffff; letter-spacing: -1.5px; text-transform: uppercase;">COMMAND CENTER</h1>
+                            <p style="margin: 10px 0 0; font-size: 14px; font-weight: 600; color: #ffffff; opacity: 0.8; letter-spacing: 1px;">SOS DISPATCH PROTOCOL ALPHA-3</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content Body -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <!-- Pilgrim Profile -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fef2f2; border: 2px solid #fee2e2; border-radius: 24px; padding: 24px; margin-bottom: 30px;">
+                                <tr>
+                                    <td width="60" style="vertical-align: middle;">
+                                        <div style="width: 60px; height: 60px; background-color: #ef4444; border-radius: 18px; line-height: 60px; text-align: center; color: #ffffff; font-size: 24px; font-weight: 900;">${(user.name || "P").charAt(0)}</div>
+                                    </td>
+                                    <td style="padding-left: 20px; vertical-align: middle;">
+                                        <h3 style="margin: 0; font-size: 20px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">${user.name || "Unknown Pilgrim"}</h3>
+                                        <p style="margin: 4px 0 0; font-size: 13px; font-weight: 800; color: #ef4444; text-transform: uppercase; letter-spacing: 1.5px;">${user.userType || 'Pilgrim'} Security Alert</p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Contact Grid -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 30px;">
+                                <tr>
+                                    <td width="48%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px;">
+                                        <span style="font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Primary Mobile</span>
+                                        <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: block;">${user.phone || "Not Provided"}</span>
+                                    </td>
+                                    <td width="4%"></td>
+                                    <td width="48%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px;">
+                                        <span style="font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Verified Email</span>
+                                        <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: block;">${user.email || "Not Provided"}</span>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Satellite Position -->
+                            <div style="background-color: #000000; color: #38bdf8; padding: 30px; border-radius: 20px; font-family: 'Courier New', Courier, monospace; font-size: 14px; border: 1px solid rgba(56,189,248,0.3); line-height: 1.6;">
+                                <span style="color: #0ea5e9; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">LIVE SATLOCK COORDINATES</span><br/>
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="color: #38bdf8; margin-top: 10px;">
+                                    <tr><td width="40" style="font-weight: 900;">LAT:</td><td>${location.lat}</td></tr>
+                                    <tr><td width="40" style="font-weight: 900;">LNG:</td><td>${location.lng}</td></tr>
+                                    <tr><td width="40" style="font-weight: 900;">STS:</td><td>Precise Lock (± 5m)</td></tr>
+                                </table>
+                            </div>
+
+                            <!-- Track Action Button -->
+                            <div style="padding: 40px 0 0;">
+                                <a href="${googleMapsUrl}" style="display: block; background-color: #1e293b; color: #ffffff; text-decoration: none; padding: 22px; border-radius: 20px; text-align: center; font-weight: 900; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 15px 30px rgba(30,41,59,0.3);">📍 Tracking: Reach Pilgrim</a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td align="center" style="background-color: #1e293b; padding: 40px; color: #94a3b8;">
+                            <span style="font-size: 18px; font-weight: 900; color: #ffffff; display: block; margin-bottom: 8px; letter-spacing: 1px;">DIVINE YATRA</span>
+                            <p style="margin: 0; font-size: 12px; font-weight: 600;">Automated Security Dispatcher • Mission Control</p>
+                            <div style="margin-top: 25px; font-size: 10px; opacity: 0.5;">© 2024 Command and Control • Emergency System Protocol Alpha</div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+
+    const mailOptions = {
+        from: `"🚨 COMMAND CENTER" <${process.env.SMTP_USER}>`,
+        to: adminEmail,
+        subject: `🚨 EMERGENCY: SOS Alert from ${user.name} - ACTION REQUIRED`,
+        html,
+        priority: 'high'
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
+/**
  * Send reset password email to client
  * @param {string} email - Client's email address
  * @param {string} resetToken - JWT reset token
@@ -201,5 +307,5 @@ export const sendResetPasswordEmail = async (email, resetToken) => {
     </body>
     </html>`,
   };
-  await transport.sendMail(mailOptions);
+  await transporter.sendMail(mailOptions);
 };

@@ -54,7 +54,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
   })
 );
@@ -111,7 +111,7 @@ const initializeApp = async () => {
   try {
     console.log("🔄 Divya Yatra Server Initializing...");
     await connectDB();
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
     console.log("✅ Database Connected");
 
     const backendRoot = path.dirname(fileURLToPath(import.meta.url));

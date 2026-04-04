@@ -54,6 +54,28 @@ body {
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
+:root {
+  --header-height: 70px;
+  --alert-banner-height: 0px;
+}
+
+/* Shifting full page when alert is active */
+body:has(.z-40.animate-in.slide-in-from-top) .min-h-screen > .pt-24,
+body:has(.z-40.animate-in.slide-in-from-top) .admin-container,
+body:has(.z-40.animate-in.slide-in-from-top) .dashboard-content {
+  padding-top: calc(var(--header-height) + 60px) !important;
+  transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-marquee {
+  animation: marquee-linear 3s linear infinite;
+}
+
+@keyframes marquee-linear {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 .app {
   min-height: 100vh;
   display: flex;

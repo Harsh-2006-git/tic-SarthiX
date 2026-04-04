@@ -15,8 +15,17 @@ import {
     MoreVertical,
     ChevronRight,
     ShieldCheck,
+
     Zap,
-    LayoutDashboard
+    LayoutDashboard,
+    Bell,
+    Trash2,
+    X,
+    ShieldAlert,
+    Navigation,
+    MapPin,
+    ExternalLink,
+    ChevronDown
 } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -28,14 +37,33 @@ const AdminPage = () => {
         totalUsers: 0,
         activeTickets: 0,
         reportedItems: 0,
-        crowdAlerts: 0,
-        revenue: '₹0.0L'
+        revenue: '₹0L'
     });
 
     const [users, setUsers] = useState([]);
     const [lostItems, setLostItems] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [zoneData, setZoneData] = useState([]);
+    const [alerts, setAlerts] = useState([]);
+    const [sosAlerts, setSosAlerts] = useState([]);
+    const [isPushing, setIsPushing] = useState(false);
+    const templates = {
+        crowd: {
+            title: "CROWD ALERT",
+            message: "High density reported at Mahakal corridor. Please stay in your designated rows.",
+            severity: "warning"
+        },
+        route: {
+            title: "ROUTE GUIDANCE",
+            message: "Main Gateway is congested. Please use the North Entry for faster access.",
+            severity: "info"
+        },
+        emergency: {
+            title: "EMERGENCY MODE",
+            message: "Priority clearance at Outer Gates. Emergency vehicles heading to Sanctum.",
+            severity: "critical"
+        }
+    };
 
     const BACKEND_URL = 'http://localhost:3001/api/v1/admin';
 
@@ -52,13 +80,7 @@ const AdminPage = () => {
             // Fetch Stats
             const statsRes = await fetch(`${BACKEND_URL}/stats`, { headers });
             const statsJson = await statsRes.json();
-            setStats({
-                totalUsers: statsJson.totalUsers,
-                activeTickets: statsJson.totalTickets,
-                reportedItems: statsJson.totalLostItems,
-                crowdAlerts: 0,
-                revenue: statsJson.revenue
-            });
+            setStats(statsJson);
 
             // Fetch Users
             const usersRes = await fetch(`${BACKEND_URL}/users`, { headers });
@@ -72,14 +94,80 @@ const AdminPage = () => {
             const ticketsRes = await fetch(`${BACKEND_URL}/tickets`, { headers });
             setBookings(await ticketsRes.json());
 
-            // Fetch Density
-            const densityRes = await fetch(`${BACKEND_URL}/density`, { headers });
-            setZoneData(await densityRes.json());
+            // Fetch Density - Using the same source as the public density page
+            const publicApiV1 = BACKEND_URL.replace('/admin', '/zone');
+            const densityRes = await fetch(`${publicApiV1}/density`, { headers });
+            const densityData = await densityRes.json();
+            // Handle both formats: { zones: [...] } or just [...]
+            setZoneData(densityData.zones || densityData || []);
+
+            // Fetch Alerts
+            const alertsRes = await fetch(`${BACKEND_URL}/alerts/active`, { headers });
+            setAlerts(await alertsRes.json());
+
+            // Fetch SOS Alerts
+            const sosRes = await fetch(`${BACKEND_URL}/sos`, { headers });
+            setSosAlerts(await sosRes.json());
 
         } catch (error) {
             console.error("Master Console Error:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const pushAlert = async (title, message, severity) => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`${BACKEND_URL}/alerts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ title, message, severity })
+            });
+            if (res.ok) {
+                // Refresh dashboard to show the new alert log
+                fetchDashboardData();
+            }
+        } catch (error) {
+            console.error("Push Alert Error:", error);
+        }
+    };
+
+    const deactivateAlert = async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${BACKEND_URL}/alerts/${id}/deactivate`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (res.ok) {
+                // Refresh data to reflect deactivation
+                fetchDashboardData();
+            }
+        } catch (err) {
+            console.error("Deactivate Error:", err);
+        }
+    };
+
+    const resolveSOS = async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${BACKEND_URL}/sos/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                // Refresh data to reflect deactivation
+                fetchDashboardData();
+            }
+        } catch (err) {
+            console.error("Resolve SOS Error:", err);
         }
     };
 
@@ -101,7 +189,8 @@ const AdminPage = () => {
         { id: 'crowd', label: 'Flow & Crowd', icon: Activity },
         { id: 'lostfound', label: 'Lost & Found', icon: Package },
         { id: 'bookings', label: 'Bookings', icon: Ticket },
-        { id: 'signage', label: 'Digital Board', icon: Monitor }
+        { id: 'signage', label: 'Digital Board', icon: Monitor },
+        { id: 'emergency', label: 'SOS Control', icon: ShieldAlert }
     ];
 
     return (
@@ -175,8 +264,7 @@ const AdminPage = () => {
                                     {[
                                         { label: 'Total Devotees', val: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
                                         { label: 'Active Bookings', val: stats.activeTickets, icon: Ticket, color: 'text-orange-600', bg: 'bg-orange-50' },
-                                        { label: 'Cloud Density', val: 'Low', icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                        { label: 'Net Revenue', val: stats.revenue, icon: BarChart3, color: 'text-purple-600', bg: 'bg-purple-50' }
+                                        { label: 'Reported Items', val: stats.reportedItems, icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                                     ].map((s, idx) => (
                                         <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all group">
                                             <div className={`${s.bg} ${s.color} w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
@@ -195,23 +283,45 @@ const AdminPage = () => {
                                             <h3 className="text-xl font-bold">Flow Distribution</h3>
                                             <button className="text-xs font-bold text-orange-600 hover:underline">Full Map</button>
                                         </div>
-                                        <div className="space-y-6">
-                                            {[
-                                                { zone: 'Main Sanctum', count: 420, cap: 500, color: 'bg-orange-500' },
-                                                { zone: 'Nandi Hall', count: 180, cap: 300, color: 'bg-blue-500' },
-                                                { zone: 'Mahakal Corridor', count: 1200, cap: 5000, color: 'bg-emerald-500' },
-                                                { zone: 'Outer Entry', count: 85, cap: 200, color: 'bg-purple-500' }
-                                            ].map((z, idx) => (
-                                                <div key={idx} className="space-y-2">
-                                                    <div className="flex justify-between text-xs font-bold">
-                                                        <span className="text-slate-600">{z.zone}</span>
-                                                        <span className="text-slate-400">{z.count} / {z.cap}</span>
-                                                    </div>
-                                                    <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden">
-                                                        <div className={`h-full ${z.color} transition-all duration-1000`} style={{ width: `${(z.count / z.cap) * 100}%` }}></div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
+                                            {(() => {
+                                                const zoneMapping = {
+                                                    1: { name: 'Mahakal', cap: 100 },
+                                                    2: { name: 'Ram Ghat', cap: 50 },
+                                                    3: { name: 'Kshipra', cap: 40 },
+                                                    4: { name: 'Harsiddhi', cap: 80 },
+                                                    5: { name: 'Ganesh', cap: 30 },
+                                                    6: { name: 'Bhairav', cap: 60 }
+                                                };
+
+                                                return Object.entries(zoneMapping).map(([id, meta]) => {
+                                                    const zoneID = Number(id);
+                                                    // Map 'density' or 'count' field from backend
+                                                    const zone = zoneData.find(z => z.zone_id === zoneID) || { count: 0, density: 0 };
+                                                    const count = zone.density !== undefined ? zone.density : (zone.count || 0);
+
+                                                    const status = count > (meta.cap * 0.8) ? 'Crit' : count > (meta.cap * 0.5) ? 'Mod' : 'Low';
+                                                    const statusColor = status === 'Crit' ? 'bg-rose-100 text-rose-600' : status === 'Mod' ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600';
+
+                                                    return (
+                                                        <div key={id} className="p-2 md:p-3 bg-slate-50/50 rounded-xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all duration-300">
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <h4 className="font-black text-slate-900 text-[8px] uppercase tracking-tighter truncate max-w-[50px]">{meta.name}</h4>
+                                                                <span className={`px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase ${statusColor}`}>
+                                                                    {status}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-baseline gap-1 mb-0.5">
+                                                                <div className="text-lg font-black text-slate-800">{count}</div>
+                                                                <div className="text-slate-400 font-bold text-[8px]">/ {meta.cap}</div>
+                                                            </div>
+                                                            <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                                                                <div className={`h-full ${status === 'Crit' ? 'bg-rose-500' : status === 'Mod' ? 'bg-orange-500' : 'bg-emerald-500'} transition-all duration-500`} style={{ width: `${Math.min(100, (count / meta.cap) * 100)}%` }}></div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                });
+                                            })()}
                                         </div>
                                     </div>
 
@@ -313,22 +423,63 @@ const AdminPage = () => {
 
                         {activeTab === 'signage' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center">
+                                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
                                     <div className="w-20 h-20 bg-orange-100 text-orange-600 rounded-[2rem] flex items-center justify-center mb-6">
                                         <Monitor size={40} />
                                     </div>
                                     <h3 className="text-2xl font-black mb-4 tracking-tight">Main Gateway Signage</h3>
                                     <p className="text-slate-500 text-sm mb-8">Current active board: <strong>Safety & Density Alerts</strong></p>
 
-                                    <div className="w-full space-y-3">
-                                        <button className="w-full py-4 bg-orange-50 text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-3">
-                                            Push Crowd Alert Board
-                                        </button>
-                                        <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3">
-                                            Show Route Guidance
-                                        </button>
-                                        <button className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold flex items-center justify-center gap-3">
-                                            Emergency Evacuation Mode
+                                    <div className="space-y-6">
+                                        <div className="flex gap-2 p-1 bg-white border border-slate-200 rounded-xl">
+                                            {Object.keys(templates).map(t => (
+                                                <button
+                                                    key={t}
+                                                    onClick={() => setCustomAlert(templates[t])}
+                                                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${customAlert.title.toLowerCase().includes(t) ? 'bg-slate-900 text-white' : 'hover:bg-slate-50 text-slate-400'}`}
+                                                >
+                                                    {t}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="group">
+                                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 mb-1 block">Broadcast Title</label>
+                                                <input
+                                                    type="text"
+                                                    value={customAlert.title}
+                                                    onChange={(e) => setCustomAlert({ ...customAlert, title: e.target.value })}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl h-12 px-4 text-xs font-bold outline-none focus:border-orange-500 transition-colors"
+                                                />
+                                            </div>
+                                            <div className="group">
+                                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 mb-1 block">Display Message</label>
+                                                <textarea
+                                                    rows="3"
+                                                    value={customAlert.message}
+                                                    onChange={(e) => setCustomAlert({ ...customAlert, message: e.target.value })}
+                                                    className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-xs font-medium outline-none focus:border-orange-500 transition-colors resize-none"
+                                                ></textarea>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                {['info', 'warning', 'critical'].map(s => (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => setCustomAlert({ ...customAlert, severity: s })}
+                                                        className={`flex-1 py-3 px-4 rounded-xl border-2 text-[9px] font-black uppercase tracking-widest transition-all ${customAlert.severity === s ? (s === 'critical' ? 'border-rose-500 bg-rose-50 text-rose-600' : s === 'warning' ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-indigo-500 bg-indigo-50 text-indigo-600') : 'border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-600'}`}
+                                                    >
+                                                        {s}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => pushAlert(customAlert.title, customAlert.message, customAlert.severity)}
+                                            className="w-full py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:translate-y-[-2px] hover:shadow-xl active:translate-y-0 shadow-lg shadow-slate-900/10 transition-all">
+                                            <Bell size={16} className={customAlert.severity === 'critical' ? 'animate-bounce' : ''} />
+                                            BROADCAST TO DIGITAL BOARDS
                                         </button>
                                     </div>
                                 </div>
@@ -336,28 +487,42 @@ const AdminPage = () => {
                                 <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative flex flex-col">
                                     <div className="flex justify-between items-center mb-8">
                                         <h3 className="text-lg font-bold flex items-center gap-2">
-                                            <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span> Live Preview
+                                            <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span> Live Active Alerts
                                         </h3>
-                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Board #04</span>
-                                    </div>
-
-                                    <div className="flex-1 flex flex-col items-center justify-center border-2 border-slate-800 rounded-[2rem] p-6 bg-slate-950/50">
-                                        <h2 className="text-3xl font-black text-white text-center mb-4 leading-tight italic">
-                                            SANCTUM <span className="text-orange-500 underline decoration-4 underline-offset-8 font-serif">DARSHAN</span> OPEN
-                                        </h2>
-                                        <div className="grid grid-cols-2 gap-4 w-full mt-6">
-                                            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center">
-                                                <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest mb-1">Queue Time</p>
-                                                <p className="text-xl font-bold text-orange-400">12 MINS</p>
-                                            </div>
-                                            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center">
-                                                <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest mb-1">Density</p>
-                                                <p className="text-xl font-bold text-emerald-400 italic">LIGHT</p>
-                                            </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[9px] font-black uppercase text-slate-400">Total: {alerts.length}</span>
                                         </div>
                                     </div>
 
-                                    <p className="mt-6 text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Hardware ID: OREO-DISPLAY-01-V2</p>
+                                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {alerts.length === 0 ? (
+                                            <div className="py-12 border-2 border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center text-slate-600 italic">
+                                                <Monitor size={32} className="mb-2 opacity-20" />
+                                                <p className="text-xs font-bold uppercase tracking-widest">No Active Broadcasts</p>
+                                            </div>
+                                        ) : (
+                                            alerts.map(a => (
+                                                <div key={a.alert_id} className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between group transition-all hover:border-slate-700">
+                                                    <div className="flex items-center gap-4 min-w-0">
+                                                        <div className={`p-3 rounded-xl shrink-0 ${a.severity === 'critical' ? 'bg-rose-500/10 text-rose-500' : 'bg-orange-500/10 text-orange-500'}`}>
+                                                            <Bell size={18} />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h4 className="text-xs font-black uppercase tracking-tighter truncate text-slate-200">{a.title}</h4>
+                                                            <p className="text-[10px] text-slate-500 line-clamp-1">{a.message}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => deactivateAlert(a.alert_id)}
+                                                        className="p-3 bg-red-500/10 hover:bg-red-50 text-red-500 hover:text-white rounded-xl transition-all"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    <p className="mt-8 text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em] border-t border-slate-800 pt-6">Hardware Status: READY FOR PUSH</p>
                                 </div>
                             </div>
                         )}
@@ -462,26 +627,151 @@ const AdminPage = () => {
                                 <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
                                     <h3 className="text-2xl font-black">Zone Capacity Monitoring</h3>
                                 </div>
-                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {zoneData.map((zone, idx) => (
-                                        <div key={idx} className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h4 className="font-black text-slate-900">Zone #{zone.zone_id}</h4>
-                                                <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${zone.count > 10 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                                                    {zone.count > 10 ? 'High' : 'Optimal'}
-                                                </span>
+                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {[1, 2, 3, 4, 5, 6].map((id) => {
+                                        const zoneMapping = {
+                                            1: { name: 'Mahakaleshwar Mandir', cap: 100 },
+                                            2: { name: 'Ram Ghat', cap: 50 },
+                                            3: { name: 'Kshipra Bridge', cap: 40 },
+                                            4: { name: 'Harsiddhi Mandir', cap: 80 },
+                                            5: { name: 'Bada Ganesh Mandir', cap: 30 },
+                                            6: { name: 'Kal Bhairav Mandir', cap: 60 }
+                                        };
+                                        const meta = zoneMapping[id];
+                                        const zone = zoneData.find(z => z.zone_id === id) || { count: 0, density: 0 };
+                                        const count = zone.density !== undefined ? zone.density : (zone.count || 0);
+
+                                        const status = count > (meta.cap * 0.8) ? 'Critical' : count > (meta.cap * 0.5) ? 'Moderate' : 'Low';
+                                        const statusColor = status === 'Critical' ? 'bg-rose-100 text-rose-600' : status === 'Moderate' ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600';
+
+                                        return (
+                                            <div key={id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 group hover:bg-white hover:shadow-xl transition-all duration-300">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <h4 className="font-black text-slate-900 group-hover:text-orange-600 transition-colors uppercase text-[10px] tracking-widest">{meta.name}</h4>
+                                                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${statusColor}`}>
+                                                        {status}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-baseline gap-2 mb-2">
+                                                    <div className="text-4xl font-black text-slate-900 group-hover:text-orange-600 transition-colors">{count}</div>
+                                                    <div className="text-slate-400 font-bold text-sm">/ {meta.cap}</div>
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Live Live Flow</p>
                                             </div>
-                                            <div className="text-4xl font-black text-orange-600 mb-2">{zone.count}</div>
-                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Active Devotees</p>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'emergency' && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex justify-between items-center bg-red-600 rounded-[2rem] p-8 text-white shadow-xl shadow-red-600/20">
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-16 h-16 bg-white/20 rounded-[1.5rem] flex items-center justify-center border border-white/10 animate-pulse">
+                                            <ShieldAlert size={32} />
                                         </div>
-                                    ))}
+                                        <div>
+                                            <h2 className="text-3xl font-black italic tracking-tighter uppercase">Emergency Mission Control</h2>
+                                            <p className="text-red-100 text-xs font-bold uppercase tracking-widest mt-1 opacity-80">Divine Safety Protocol Active • Sector Monitoring ON</p>
+                                        </div>
+                                    </div>
+                                    <div className="px-6 py-3 bg-black/20 rounded-2xl border border-white/10 text-center">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-red-200">Active Signals</div>
+                                        <div className="text-2xl font-black">{sosAlerts.filter(a => a.status === 'active').length}</div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {sosAlerts.length === 0 ? (
+                                        <div className="lg:col-span-2 py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-slate-300">
+                                            <ShieldAlert size={64} className="mb-4 opacity-20" />
+                                            <p className="text-sm font-black uppercase tracking-widest">No Emergency Signals Detected</p>
+                                        </div>
+                                    ) : (
+                                        sosAlerts.map(sos => (
+                                            <div key={sos.sos_id} className={`bg-white rounded-[2.5rem] overflow-hidden border transition-all hover:shadow-2xl ${sos.status === 'active' ? 'border-red-500 shadow-xl shadow-red-600/5' : 'border-slate-100'}`}>
+                                                <div className={`p-6 flex justify-between items-center ${sos.status === 'active' ? 'bg-red-50' : 'bg-slate-50'}`}>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-600 shadow-sm border border-red-100">
+                                                            <Navigation size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tracking ID</span>
+                                                            <h4 className="text-sm font-black uppercase tracking-tighter text-slate-800">#{sos.sos_id.toString().padStart(4, '0')}</h4>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${sos.status === 'active' ? 'bg-red-600 text-white animate-pulse' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                        {sos.status}
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-8 space-y-6">
+                                                    <div className="flex items-start gap-4">
+                                                        <img 
+                                                            src={getImageUrl(sos.Client?.profile_image) || "https://img.freepik.com/free-vector/user-blue-gradient_78370-4692.jpg"} 
+                                                            className="w-16 h-16 rounded-[1.25rem] object-cover border-2 border-slate-50 shadow-sm"
+                                                        />
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="text-xl font-black text-slate-800 tracking-tight">{sos.Client?.name}</h3>
+                                                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-black uppercase tracking-widest">{sos.Client?.userType}</span>
+                                                            </div>
+                                                            <div className="space-y-1 mt-2">
+                                                                <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+                                                                    <div className="w-1.5 h-1.5 bg-slate-300 rounded-full"></div> {sos.Client?.phone}
+                                                                </div>
+                                                                <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+                                                                    <div className="w-1.5 h-1.5 bg-slate-300 rounded-full"></div> {sos.Client?.email}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-slate-950 p-6 rounded-[2rem] text-blue-400 font-mono text-[11px] relative overflow-hidden group">
+                                                        <div className="absolute top-0 right-0 p-4 opacity-20 text-blue-200">
+                                                            <MapPin size={40} />
+                                                        </div>
+                                                        <div className="relative z-10">
+                                                            <div className="flex justify-between items-center mb-4">
+                                                                <span className="text-blue-900 font-black uppercase text-[9px] tracking-widest">Satellite Lock Verified</span>
+                                                                <span className="text-blue-900 font-black uppercase text-[9px] tracking-widest">{new Date(sos.created_at).toLocaleTimeString()}</span>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <div>LAT: {sos.lat}</div>
+                                                                <div>LNG: {sos.lng}</div>
+                                                                <div>ALT: 492m ABOVE MSL</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-4 flex gap-4">
+                                                        <a 
+                                                            href={`https://www.google.com/maps/search/?api=1&query=${sos.lat},${sos.lng}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex-1 h-16 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:translate-y-[-4px] hover:shadow-xl active:translate-y-0 shadow-lg shadow-slate-900/20 transition-all"
+                                                        >
+                                                            <Navigation size={18} /> REACH TO PILGRIM
+                                                        </a>
+                                                        <button 
+                                                            onClick={() => resolveSOS(sos.sos_id)}
+                                                            title="Resolve & Clear Alert"
+                                                            className="w-16 h-16 bg-white border border-slate-200 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-emerald-50 hover:text-emerald-500 hover:border-emerald-200 transition-all group"
+                                                        >
+                                                            <CheckCircle2 size={24} className="group-hover:scale-110 transition-transform" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
-
             <Footer />
         </div>
     );

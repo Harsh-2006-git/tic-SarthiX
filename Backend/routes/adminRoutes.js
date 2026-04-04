@@ -4,7 +4,13 @@ import {
     getAllUsers,
     getAllTickets,
     getAllLostFound,
-    getZoneDensity
+    getZoneDensity,
+    getActiveAlerts,
+    createAlert,
+    deactivateAlert,
+    handleSOS,
+    getSOSAlerts,
+    deleteSOS
 } from "../controllers/adminController.js";
 import authenticateClient from "../middlewares/authMiddleware.js";
 
@@ -16,5 +22,11 @@ router.get("/users", authenticateClient, getAllUsers);
 router.get("/tickets", authenticateClient, getAllTickets);
 router.get("/lostfound", authenticateClient, getAllLostFound);
 router.get("/density", authenticateClient, getZoneDensity);
+router.get("/alerts/active", getActiveAlerts); // Public access for AlertBanner
+router.post("/alerts", authenticateClient, createAlert); // Admin only alert creation
+router.patch("/alerts/:id/deactivate", authenticateClient, deactivateAlert);
+router.post("/sos", authenticateClient, handleSOS);
+router.get("/sos", authenticateClient, getSOSAlerts);
+router.delete("/sos/:id", authenticateClient, deleteSOS);
 
 export default router;

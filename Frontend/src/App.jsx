@@ -24,6 +24,7 @@ import ChatbotPage from "./pages/ChatbotPage";
 import ScrollToTop from "./components/ScrollToTop";
 import AlertBanner from "./components/AlertBanner";
 
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 

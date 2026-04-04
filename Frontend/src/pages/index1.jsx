@@ -20,10 +20,12 @@ import {
   Hospital,
   Hotel,
   Utensils,
-  Shield
+  Shield,
+  ShieldAlert
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { API_V1 } from "../config/api";
 import logo from "../assets/logo.png";
 
 // Optimize: Load image references lazily and only use every 2nd frame to reduce payload by 50%
@@ -40,6 +42,45 @@ const HomePage2 = () => {
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [nightHeroUrl, setNightHeroUrl] = useState(null);
+  const [sosStatus, setSosStatus] = useState('idle'); // idle, sending, success, error
+
+  const handleSOS = async () => {
+    setSosStatus('sending');
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        setSosStatus('idle');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+            const { latitude, longitude } = position.coords;
+            const token = localStorage.getItem('token');
+
+            const response = await fetch(`${API_V1}/admin/sos`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ lat: latitude, lng: longitude })
+            });
+
+            if (response.ok) {
+                setSosStatus('success');
+                setTimeout(() => setSosStatus('idle'), 5000);
+            } else {
+                throw new Error("Failed to reach emergency services");
+            }
+        } catch (err) {
+            alert(err.message);
+            setSosStatus('idle');
+        }
+    }, (err) => {
+        alert("Geolocation permission denied. Please enable location for SOS.");
+        setSosStatus('idle');
+    });
+  };
 
   useEffect(() => {
     let loadedCount = 0;
@@ -284,15 +325,31 @@ const HomePage2 = () => {
                 <div className="flex flex-row gap-2 sm:gap-3 justify-center lg:justify-start">
                   <button
                     onClick={() => handleNavigation("/ticket")}
-                    className="px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-full font-bold text-[10px] sm:text-xs md:text-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(234,88,12,0.6)] hover:-translate-y-1 transform border border-orange-500/50"
+                    className="px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white rounded-full font-bold text-[10px] sm:text-xs md:text-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(79,70,229,0.5)] hover:-translate-y-1 transform border border-indigo-400/30"
                   >
                     Start Your Journey
                   </button>
                   <button
                     onClick={() => handleNavigation("darshan")}
-                    className="px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 bg-black/40 hover:bg-white/20 text-white border border-white/30 rounded-full font-bold text-[10px] sm:text-xs md:text-sm transition-all duration-300 hover:-translate-y-1 transform backdrop-blur-md shadow-md"
+                    className="hidden md:flex px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 bg-black/40 hover:bg-white/20 text-white border border-white/30 rounded-full font-bold text-[10px] sm:text-xs md:text-sm transition-all duration-300 hover:-translate-y-1 transform backdrop-blur-md shadow-md"
                   >
                     Watch Live Darshan
+                  </button>
+                  <button
+                    onClick={handleSOS}
+                    disabled={sosStatus === 'sending'}
+                    className={`px-5 py-2.5 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-full font-black text-[10px] sm:text-[10px] md:text-sm transition-all duration-300 flex items-center gap-2 group transform hover:-translate-y-1 shadow-2xl ${
+                        sosStatus === 'success' 
+                        ? 'bg-emerald-600 text-white shadow-emerald-500/50 scale-105' 
+                        : 'bg-red-600 text-white border border-red-500/40 shadow-red-600/50 hover:bg-red-700'
+                    }`}
+                  >
+                    <ShieldAlert size={18} className={`${sosStatus === 'sending' ? 'animate-spin' : 'animate-pulse group-hover:scale-125 transition-transform'}`} />
+                    <span className="tracking-tighter">
+                        {sosStatus === 'idle' && "EMERGENCY SOS"}
+                        {sosStatus === 'sending' && "BROADCASTING..."}
+                        {sosStatus === 'success' && "HELP DISPATCHED!"}
+                    </span>
                   </button>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, AlertTriangle, Info, X, Bell } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Info, X, Zap } from 'lucide-react';
 import { API_V1 } from '../config/api';
 
 const AlertBanner = () => {
@@ -8,8 +8,7 @@ const AlertBanner = () => {
 
     useEffect(() => {
         fetchAlerts();
-        // Poll every 30 seconds for new alerts
-        const interval = setInterval(fetchAlerts, 30000);
+        const interval = setInterval(fetchAlerts, 20000); // Polling every 20s
         return () => clearInterval(interval);
     }, []);
 
@@ -19,10 +18,15 @@ const AlertBanner = () => {
             if (res.ok) {
                 const data = await res.json();
                 setAlerts(data);
+                
+                // Set a CSS variable for the alert height if any alert is active
+                if (data.length > 0 && !dismissed.includes(data[0].alert_id)) {
+                    document.documentElement.style.setProperty('--alert-banner-height', 'auto');
+                } else {
+                    document.documentElement.style.setProperty('--alert-banner-height', '0px');
+                }
             }
-        } catch (err) {
-            // Silently fail — alerts are non-critical
-        }
+        } catch (err) { }
     };
 
     const dismiss = (id) => {
@@ -31,64 +35,78 @@ const AlertBanner = () => {
 
     const visibleAlerts = alerts.filter(a => !dismissed.includes(a.alert_id));
 
-    if (visibleAlerts.length === 0) return null;
+    if (visibleAlerts.length === 0) {
+        document.documentElement.style.setProperty('--alert-banner-height', '0px');
+        return null;
+    }
 
+    const firstAlert = visibleAlerts[0];
     const getStyle = (severity) => {
         switch (severity) {
+            case 'emergency':
             case 'critical':
                 return {
-                    bg: 'bg-gradient-to-r from-rose-600 to-red-600',
+                    bg: 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600',
                     icon: AlertCircle,
-                    text: 'text-white',
-                    close: 'hover:bg-white/20 text-white/70 hover:text-white'
+                    shadow: 'shadow-[0_4px_30px_rgba(225,29,72,0.3)]',
+                    animate: 'animate-pulse'
                 };
             case 'warning':
                 return {
                     bg: 'bg-gradient-to-r from-amber-500 to-orange-500',
                     icon: AlertTriangle,
-                    text: 'text-white',
-                    close: 'hover:bg-white/20 text-white/70 hover:text-white'
+                    shadow: 'shadow-[0_4px_25px_rgba(245,158,11,0.2)]',
+                    animate: ''
                 };
             default:
                 return {
-                    bg: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+                    bg: 'bg-gradient-to-r from-indigo-600 to-slate-900',
                     icon: Info,
-                    text: 'text-white',
-                    close: 'hover:bg-white/20 text-white/70 hover:text-white'
+                    shadow: 'shadow-[0_4px_20px_rgba(79,70,229,0.1)]',
+                    animate: ''
                 };
         }
     };
 
+    const style = getStyle(firstAlert.severity);
+    const Icon = style.icon;
+
     return (
-        <div className="fixed bottom-4 right-4 z-[80] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
-            {visibleAlerts.slice(0, 3).map((alert, idx) => {
-                const style = getStyle(alert.severity);
-                const Icon = style.icon;
-                return (
-                    <div key={alert.alert_id}
-                        className={`${style.bg} ${style.text} rounded-2xl p-4 shadow-2xl pointer-events-auto animate-in slide-in-from-right fade-in duration-500 border border-white/10`}
-                        style={{ animationDelay: `${idx * 150}ms` }}>
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                                <Icon size={16} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    <h4 className="font-black text-sm truncate">{alert.title}</h4>
-                                </div>
-                                <p className="text-xs opacity-90 leading-relaxed line-clamp-2">{alert.message}</p>
-                                <p className="text-[9px] opacity-60 mt-1 font-bold uppercase tracking-wider">
-                                    {new Date(alert.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                            </div>
-                            <button onClick={() => dismiss(alert.alert_id)}
-                                className={`p-1 rounded-lg ${style.close} transition-all shrink-0`}>
-                                <X size={14} />
-                            </button>
-                        </div>
+        <div className={`fixed top-[70px] left-0 w-full z-40 ${style.bg} ${style.shadow} border-b border-white/10 transition-all duration-500 animate-in slide-in-from-top fill-mode-both`}>
+            <div className="max-w-[1500px] mx-auto px-4 sm:px-12 py-3 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 ${style.animate}`}>
+                        <Icon className="text-white" size={16} />
                     </div>
-                );
-            })}
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest bg-black/20 text-white/90 px-1.5 py-0.5 rounded ring-1 ring-white/20 whitespace-nowrap">
+                                {firstAlert.severity} alert
+                            </span>
+                            <h4 className="font-black text-white text-sm truncate uppercase tracking-tighter">{firstAlert.title}</h4>
+                        </div>
+                        <p className="text-xs text-white/90 font-medium line-clamp-1">{firstAlert.message}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0">
+                    <div className="hidden sm:flex flex-col items-end opacity-60 text-white">
+                        <span className="text-[8px] font-black uppercase tracking-widest whitespace-nowrap">Reported Time</span>
+                        <span className="text-[10px] font-bold">{new Date(firstAlert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    </div>
+                    <button 
+                        onClick={() => dismiss(firstAlert.alert_id)}
+                        className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all border border-white/10 hover:rotate-90"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            </div>
+            
+            {/* Animated Scanning Bar for Critical Alerts */}
+            {firstAlert.severity === 'critical' && (
+                <div className="absolute bottom-0 left-0 h-[2px] bg-white w-full animate-marquee opacity-30"></div>
+            )}
         </div>
     );
 };

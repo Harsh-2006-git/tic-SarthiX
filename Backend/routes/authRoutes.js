@@ -35,7 +35,7 @@ router.get("/profile", authenticateClient, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate local JWT to keep everything consistent
+    // Generate local JWT to keepeverything consistent
     const localToken = jwt.sign(
       {
         client_id: client.client_id,

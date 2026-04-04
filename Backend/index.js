@@ -1,3 +1,4 @@
+// SarthiX: Pilgrim Management System v1.1 - Emergency Response Optimized
 import * as dotenv from "dotenv";
 import express, { json, response } from "express";
 import { connectDB, sequelize } from "./config/database.js";

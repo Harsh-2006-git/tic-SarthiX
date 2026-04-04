@@ -166,9 +166,8 @@ const Header = () => {
 
     const navItems = [
         { name: "Home", target: "/" },
-        { name: "Services", target: "services" },
+        { name: "Family Mode", target: "/family-mode" },
         { name: "Parking", target: "/parking" },
-        { name: "Contact", target: "contact" },
         { name: "Admin", target: "/admin" },
     ];
 

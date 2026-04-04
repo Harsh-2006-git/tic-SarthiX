@@ -22,7 +22,12 @@ import {
   MoreVertical,
   CheckCircle,
   AlertCircle,
-  Users
+  Users,
+  Search,
+  Link,
+  Lock,
+  Eye,
+  MapPin
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -49,13 +54,111 @@ const ProfileRfidPage = () => {
   const [familyMembers, setFamilyMembers] = useState([]);
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [familyForm, setFamilyForm] = useState({ name: "", relationship: "Parent" });
+  const [myGuardians, setMyGuardians] = useState([]);
+  const [trackingList, setTrackingList] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchPhone, setSearchPhone] = useState("");
+  const [searchResult, setSearchResult] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+
   const cardRef = useRef(null);
   const downloadWrapperRef = useRef(null);
 
   useEffect(() => {
     fetchProfile();
     fetchFamilyMembers();
+    fetchGuardians();
+    fetchTrackingList();
+    fetchPendingRequests();
   }, [navigate]);
+
+  const fetchGuardians = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_V1}/location/my-guardians`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setMyGuardians(await res.json());
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchTrackingList = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_V1}/location/tracking-list`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setTrackingList(await res.json());
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchPendingRequests = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_V1}/location/pending-requests`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setPendingRequests(await res.json());
+    } catch (err) { console.error(err); }
+  };
+
+  const handleApproveRequest = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_V1}/location/approve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        setSuccess("Request approved! You can now track this devotee. ✨");
+        fetchPendingRequests();
+        fetchTrackingList();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleSearchUser = async (e) => {
+    if (e) e.preventDefault();
+    setIsSearching(true);
+    setSearchResult(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_V1}/auth/search?phone=${searchPhone}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setSearchResult(data);
+      else setError(data.message || "User not found");
+    } catch (err) { setError("Search failed"); }
+    finally { setIsSearching(false); }
+  };
+
+  const handleLinkUser = async (guardianId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_V1}/location/guardian`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ guardianId }),
+      });
+      if (res.ok) {
+        setSuccess("Tracking request sent! Waiting for approval.");
+        setShowSearchModal(false);
+        fetchGuardians();
+      } else {
+        const data = await res.json();
+        setError(data.message || "Link failed");
+      }
+    } catch (err) { console.error(err); }
+  };
 
   const fetchFamilyMembers = async () => {
     try {
@@ -205,7 +308,7 @@ const ProfileRfidPage = () => {
       formData.append("name", editForm.name);
       formData.append("email", editForm.email);
       formData.append("phone", editForm.phone);
-      formData.append("userType", editForm.userType);
+      // Removed: formData.append("userType", editForm.userType);
       if (profileImage) {
         formData.append("profile_image", profileImage);
       }
@@ -364,40 +467,16 @@ const ProfileRfidPage = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Identifier</label>
-                        <div className="relative">
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                          <input
-                            type="text"
-                            value={editForm.phone}
-                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                            className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:border-orange-500 outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Devotee Tier</label>
-                        <div className="relative group/select">
-                          <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/select:text-orange-500 transition-colors" size={18} />
-                          <select
-                            value={editForm.userType}
-                            onChange={(e) => setEditForm({ ...editForm, userType: e.target.value })}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-10 focus:border-orange-500 focus:bg-white transition-all outline-none appearance-none cursor-pointer font-bold text-slate-700 text-sm"
-                          >
-                            <option value="Civilian">Civilian</option>
-                            <option value="VIP">VIP</option>
-                            <option value="Sadhu">Sadhu</option>
-                            <option value="Aged">Aged</option>
-                            {user.userType === "Admin" && <option value="Admin">Admin</option>}
-                          </select>
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </div>
-                        </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Mobile Identifier</label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        <input
+                          type="text"
+                          value={editForm.phone}
+                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                          className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:border-orange-500 outline-none"
+                        />
                       </div>
                     </div>
 
@@ -704,6 +783,104 @@ const ProfileRfidPage = () => {
                   ))}
                 </div>
               </div>
+
+              {/* SAFETY & TRACKING CIRCLE */}
+              <div className="mt-12 w-full">
+                <div className="flex items-center justify-between mb-6 px-2">
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Safety <span className="text-blue-600">Circle</span></h3>
+                  <button
+                    onClick={() => setShowSearchModal(true)}
+                    className="px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                  >
+                    + Link Existing User
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                    {/* My Guardians */}
+                    <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-2">Who Can Track Me</p>
+                        <div className="grid grid-cols-1 gap-2">
+                            {myGuardians.map(g => (
+                                <div key={g.mapping_id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                            <Shield size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">{g.guardian.name}</p>
+                                            <p className="text-[10px] text-slate-400">{g.guardian.phone}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${g.is_approved ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                        {g.is_approved ? 'Approved' : 'Pending'}
+                                    </span>
+                                </div>
+                            ))}
+                            {myGuardians.length === 0 && <p className="text-[10px] text-slate-400 italic ml-2">No guardians linked</p>}
+                        </div>
+                    </div>
+
+                    {/* Pending Requests */}
+                    {pendingRequests.length > 0 && (
+                        <div>
+                            <div className="flex items-center gap-2 mb-3 ml-2">
+                                <p className="text-[9px] font-black text-orange-600 uppercase tracking-[0.2em]">New Association Requests</p>
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                                {pendingRequests.map(req => (
+                                    <div key={req.mapping_id} className="bg-orange-50/50 p-4 rounded-2xl border border-orange-100 flex items-center justify-between group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-orange-600 shadow-sm font-bold text-xs">
+                                                {req.user.name[0]}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-800">{req.user.name}</p>
+                                                <p className="text-[10px] text-slate-500 font-bold italic">Wants you as guardian</p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => handleApproveRequest(req.user.client_id)}
+                                            className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md active:scale-95"
+                                        >
+                                            Approve
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* People I track */}
+                    <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-2">People I Track</p>
+                        <div className="grid grid-cols-1 gap-2">
+                            {trackingList.map(p => (
+                                <div key={p.mapping_id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                            <Eye size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">{p.user.name}</p>
+                                            <p className="text-[10px] text-slate-400">{p.user.phone}</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => navigate('/guardian-panel')}
+                                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all transition-transform active:scale-95"
+                                    >
+                                        <MapPin size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                            {trackingList.length === 0 && <p className="text-[10px] text-slate-400 italic ml-2">Not tracking anyone</p>}
+                        </div>
+                    </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -769,6 +946,80 @@ const ProfileRfidPage = () => {
                   <button type="button" onClick={() => setShowFamilyModal(false)} className="px-6 bg-slate-100 text-slate-400 font-black py-4 rounded-2xl uppercase tracking-widest text-[10px]">Cancel</button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SEARCH MODAL */}
+      <AnimatePresence>
+        {showSearchModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[1001] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="bg-white rounded-[3rem] p-10 max-w-md w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-600"></div>
+              
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Link <span className="text-blue-600">Devotee</span></h3>
+                <button onClick={() => { setShowSearchModal(false); setSearchResult(null); setSearchPhone(""); }} className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 transition-colors">
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Search by Mobile No.</p>
+                  <form onSubmit={handleSearchUser} className="relative">
+                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    <input 
+                      type="text"
+                      value={searchPhone}
+                      onChange={(e) => setSearchPhone(e.target.value)}
+                      placeholder="+91 XXXXX XXXXX"
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-14 pr-4 focus:border-blue-500 transition-all outline-none font-bold placeholder:text-slate-300"
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={isSearching}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
+                    >
+                      {isSearching ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Search size={20} />}
+                    </button>
+                  </form>
+                </div>
+
+                {searchResult && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }} 
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-6 bg-slate-50 rounded-[2rem] border border-blue-100 flex flex-col items-center text-center space-y-4"
+                  >
+                    <div className="w-20 h-20 rounded-full bg-white p-1 border-2 border-blue-100 shadow-sm">
+                      {searchResult.profile_image ? (
+                        <img src={resolveMediaUrl(searchResult.profile_image)} className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-black">
+                          {searchResult.name[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-slate-800">{searchResult.name}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{searchResult.phone}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleLinkUser(searchResult.client_id)}
+                      className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-[10px] shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <Link size={16} /> Link and Request Access
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           </div>
         )}

@@ -152,7 +152,7 @@ export const updateProfile = async (req, res) => {
     if (userType) client.userType = userType;
 
     if (req.file) {
-      client.profile_image = `/uploads/${req.file.filename}`;
+      client.profile_image = req.file.path; // Store the Cloudinary URL
     }
 
     await client.save();
@@ -171,6 +171,28 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Update Profile Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const searchUser = async (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
+
+    const client = await Client.findOne({
+      where: { phone },
+      attributes: ["client_id", "name", "phone", "email", "profile_image"]
+    });
+
+    if (!client) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(client);
+  } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };

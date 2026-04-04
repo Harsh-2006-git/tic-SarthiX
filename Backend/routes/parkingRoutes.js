@@ -12,11 +12,8 @@ import {
 import authenticateClient from "../middlewares/authMiddleware.js";
 import multer from "multer";
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, "uploads/parking"),
-    filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
+import { parkingStorage } from "../config/cloudinary.js";
+const upload = multer({ storage: parkingStorage });
 
 const router = express.Router();
 

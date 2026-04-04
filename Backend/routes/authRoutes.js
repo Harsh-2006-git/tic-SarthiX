@@ -1,15 +1,10 @@
 import express from "express";
 import Client from "../models/client.js";
-import { register, login, updateProfile } from "../controllers/authController.js";
+import { register, login, updateProfile, searchUser } from "../controllers/authController.js";
 import jwt from "jsonwebtoken";
 import multer from "multer";
-
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
+import { profileStorage } from "../config/cloudinary.js";
+const upload = multer({ storage: profileStorage });
 
 import authenticateClient from "../middlewares/authMiddleware.js";
 const router = express.Router();
@@ -40,7 +35,7 @@ router.get("/profile", authenticateClient, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate local JWT to keep everything consistent
+    // Generate local JWT to keepeverything consistent
     const localToken = jwt.sign(
       {
         client_id: client.client_id,
@@ -64,6 +59,7 @@ router.get("/profile", authenticateClient, async (req, res) => {
   }
 });
 
+router.get("/search", authenticateClient, searchUser);
 router.put("/profile", authenticateClient, upload.single("profile_image"), updateProfile);
 
 export default router;
